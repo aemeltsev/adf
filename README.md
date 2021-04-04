@@ -1,2 +1,11 @@
-# adf
-:alembic: implementation of classes for calculating analog and digital filters
+# Analog-Digital Filter ( library )
+
+:alembic: Analog active and digital IIR and FIR filter design in oop classes
+
+# Features:
+
+# Todo
+
+# Build
+
+# Notes
