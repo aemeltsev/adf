@@ -2,10 +2,12 @@
 
 :alembic: Analog active and digital IIR and FIR filter design in oop classes
 
-# Features:
+# Specifications
 
-# Todo
+# Build from source
 
-# Build
+# Testig
 
 # Notes
+
+# Todo
