@@ -15,9 +15,7 @@ add_library(adf STATIC
     adf/inc/adfilter.hpp
     adf/inc/genfilter.hpp
     adf/src/adfilter.cpp
-    adf/src/advmath.cpp
     adf/src/complex.cpp
-    adf/src/errornum.cpp
     adf/src/genfilter.cpp
 )
 
