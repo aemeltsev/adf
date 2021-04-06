@@ -63,7 +63,7 @@ protected:
     std::vector<T> un_acoefs, un_bcoefs; /**< to unnormalise coefs */
 
 public:
-    explicit CalcFilterCoefs(FiltParam<T>& fparam) noexcept;
+    explicit CalcFilterCoefs(std::unique_ptr<FiltParam<T>> fparam) noexcept;
     CalcFilterCoefs() noexcept;
 
     void FilterOrder();
