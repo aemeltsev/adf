@@ -54,6 +54,19 @@ void CalcFilterCoefs<T>::setApproxFilter(ApproxSelect& sapprox)
     m_sapprox = sapprox;
 }
 
+/**
+ * @brief This the common value for all filter approximation methods
+ *        \f$(\varepsilon_s / \varepsilon_p)
+ *        \f$(\varepsilon_s = 10.0^{-0.1*a_s}-1) stopband gain adjustment factor and
+ *        passband gain ratio \f$(\varepsilon_p = 10.0^{-0.1*a_p}-1)
+ * @return Ratio value of the suppression \f$(R_s)dB/\f$(R_p)dB
+ */
+template<typename T>
+T CalcFilterCoefs<T>::CommonKernel()
+{
+    return ((std::pow(10.0,-0.1*(std::get<0>(m_fparam->gain_stopband)))-1)/
+            (std::pow(10.0,-0.1*(std::get<0>(m_fparam->gain_passband)))-1));
+}
 
 template<typename T>
 void CalcFilterCoefs<T>::FilterOrder()

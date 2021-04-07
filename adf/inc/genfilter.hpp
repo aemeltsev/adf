@@ -89,6 +89,7 @@ protected:
             int16_t order);
     void setTypeFilter(FilterSelect& sfilter);
     void setApproxFilter(ApproxSelect& sapprox);
+    T CommonKernel();
 
 public:
     explicit CalcFilterCoefs(std::unique_ptr<FiltParam<T>> fparam, FilterSelect fselect) noexcept;
