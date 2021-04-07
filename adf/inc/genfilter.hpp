@@ -27,6 +27,22 @@ constexpr double ADF_SYM_EVEN(2);           /**< type 2 FIR */
 constexpr double ADF_ASYM_ODD(3);           /**< type 3 FIR */
 constexpr double ADF_ASYM_EVEN(4);          /**< type 4 FIR */
 
+enum class FilterSelect
+{
+    LPF,
+    HPF,
+    PBF,
+    SBF
+};
+
+enum class ApproxSelect
+{
+    BUTTER,
+    CHEBY,
+    ICHEBY,
+    ELLIPT
+};
+
 /**
  * @brief Container for input filter params, used double type by default
  * @param gain_passband
@@ -57,13 +73,25 @@ class CalcFilterCoefs
 {
 private:
     std::unique_ptr<FiltParam<T>> m_fparam;
+    FilterSelect m_sfilter;
+    ApproxSelect m_sapprox;
 
 protected:
     std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
     std::vector<T> un_acoefs, un_bcoefs; /**< to unnormalise coefs */
+    void setFiltParam(
+            std::pair<T, T>& g_passband,
+            std::pair<T, T>& g_stopband,
+            std::pair<T, T>& f_passband,
+            std::pair<T, T>& f_stopband,
+            T fsamp,
+            T gain,
+            int16_t order);
+    void setTypeFilter(FilterSelect& sfilter);
+    void setApproxFilter(ApproxSelect& sapprox);
 
 public:
-    explicit CalcFilterCoefs(std::unique_ptr<FiltParam<T>> fparam) noexcept;
+    explicit CalcFilterCoefs(std::unique_ptr<FiltParam<T>> fparam, FilterSelect fselect) noexcept;
     CalcFilterCoefs() noexcept;
 
     void FilterOrder();
