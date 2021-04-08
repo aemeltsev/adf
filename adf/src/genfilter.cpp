@@ -64,14 +64,76 @@ void CalcFilterCoefs<T>::setApproxFilter(ApproxSelect& sapprox)
 template<typename T>
 T CalcFilterCoefs<T>::CommonKernel()
 {
-    return ((std::pow(10.0,-0.1*(std::get<0>(m_fparam->gain_stopband)))-1)/
-            (std::pow(10.0,-0.1*(std::get<0>(m_fparam->gain_passband)))-1));
+    return ((std::pow(10.0,-0.1*m_fparam->gain_stopband.first)-1)/
+            (std::pow(10.0,-0.1*m_fparam->gain_passband.first)-1));
 }
 
 template<typename T>
 void CalcFilterCoefs<T>::FilterOrder()
 {
+    T kernel, ratio,
+      order,
+      wp1, wp2, ws1, ws2; /**< edge frequency variables */
 
+    wp1 = m_fparam->f_passband.first;
+    wp2 = m_fparam->f_passband.second;
+    ws1 = m_fparam->f_stopband.first;
+    ws2 = m_fparam->f_stopband.second;
+
+    switch(m_sfilter)
+    {
+    case FilterSelect::LPF:
+        ratio = ws1/wp1;
+        break;
+    case FilterSelect::HPF:
+        ratio = wp1/ws1;
+        break;
+    case FilterSelect::PBF:
+        if(ws1 > (wp1 * wp2) / ws2)
+        {
+            ws2 = (wp1 * wp2) / ws1;
+            m_fparam->f_stopband.first = ws2;
+        }
+        else
+        {
+            ws1 = (wp1 * wp2) / ws2;
+            m_fparam->f_stopband.second = ws1;
+        }
+        ratio = (ws2 - ws1) / (wp2 - wp1);
+        break;
+    case FilterSelect::SBF:
+        if(wp1 > (ws1 * ws2) / wp2)
+        {
+            wp2 = (ws1 * ws2) / wp1;
+            m_fparam->f_passband.first = wp2;
+        }
+        else
+        {
+            wp1 = (ws1 * ws2) / wp2;
+            m_fparam->f_passband.second = wp1;
+        }
+        ratio = (wp2 - wp1) / (ws2 - ws1);
+        break;
+    default: return /* error code */;
+    }
+
+    kernel = CommonKernel();
+
+    switch(m_sapprox)
+    {
+    case ApproxSelect::BUTTER:
+        order = std::log10(kernel)/(2 * std::log10(ratio));
+        break;
+    case ApproxSelect::CHEBY:
+    case ApproxSelect::ICHEBY:
+        order = acosh(std::sqrt(kernel))/acosh(ratio);
+        break;
+    case ApproxSelect::ELLIPT:
+        T ratio_const = 1/ratio;
+        if(ratio_const > .9999) return /* error code */;
+        T kernel_const = 1/std::sqrt(kernel);
+        if(ratio_const < 2e-8) return /* error code */;
+    }
 }
 
 template<typename T>
