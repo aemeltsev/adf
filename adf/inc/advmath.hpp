@@ -9,6 +9,8 @@
 #include <cfloat>
 #include <vector>
 
+#include "common.hpp"
+
 namespace adf {
 
 /**
