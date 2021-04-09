@@ -52,7 +52,7 @@ inline T arcsc(T p_eival, T p_eimod, int32_t p_prec)
         if(Y == 0){
             Y = std::sqrt(BT)*FLT_MIN;}
         if(std::fabs(A-B)<(A*FLT_MIN)){break;}
-        L = 2 * L;vector>
+        L = 2 * L;
         if(Y < 0.){L++;}
     }
     if(Y < 0.){L++;}
@@ -135,6 +135,8 @@ inline void ellip_funcs(T p_eival, T p_eimod, T &sn, T &cn, T &dn, int32_t p_pre
  *         \f$(
  *              E=\frac{\pi}{2a_N}
  *            )
+ *          See Satinder S. Sidhu. Elliptic integrals and functions.
+ *          https://aip.scitation.org/doi/pdf/10.1063/1.168529
  *  @param p_eimod - equal to k - the elliptic modulus
  *  @return value of the complete elliptic integral of the first kinds
  */
@@ -161,13 +163,18 @@ T ellip_integral(T p_eimod)
 }
 
 /**
- *  @brief
- *  @param
- *  @param
- *  @return
+ *  @brief Algorithm for calculate I_0 is the zeroth-order modified Bessel function of the first kind.
+ *         Using in window functions finite impulse response filter design and spectral analysis.
+ *         In general, when using the Kaiser-Bessel window function, the modified Bessel function is defined as:
+ *         \f$(
+ *              I_0(x) = \sum_{k=1}^{\infty} \bigg[ \frac{(\frac{x}{2})^k}{k!} \bigg]^{2}
+ *            )
+ *         See Rabiner L.R.-Theory and Application of Digital Signal Processing
+ *  @param p_arg - the argument of Bessel function
+ *  @return value of the modified Bessel function of the first kind
  */
 template<class T>
-T bessel_func_mod(T p_arg, int32_t p_prec)
+T bessel_func_mod(T p_arg)
 {
     int32_t i, converge;
     T Iold, Inew, J, K;
@@ -177,11 +184,11 @@ T bessel_func_mod(T p_arg, int32_t p_prec)
     K=p_arg/2.;
     converge=0;
 
-    for(i=1; i<p_prec; i++)
+    for(i=1; i<MAX_TERMS; i++)
     {
         J *= K/i;
         Inew = Iold+(J*J);
-        if((Inew-Iold)<FLT_MIN){
+        if((Inew-Iold)<ERR_SMALL){
             converge=1;
             break;}
         Iold=Inew;
