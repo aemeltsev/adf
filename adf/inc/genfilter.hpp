@@ -11,6 +11,9 @@
 
 namespace adf {
 
+/**
+ * @brief The FilterSelect enum - the enumeration class for the type filter select
+ */
 enum class FilterSelect
 {
     LPF,
@@ -19,6 +22,9 @@ enum class FilterSelect
     SBF
 };
 
+/**
+ * @brief The ApproxSelect enum - the enumeration class for select the approximation methods
+ */
 enum class ApproxSelect
 {
     BUTTER,
@@ -46,7 +52,6 @@ struct FiltParam
   std::pair<T, T> freq_stopband;
   T fsamp;
   T gain;
-  int16_t order;
 };
 
 /**
@@ -59,6 +64,7 @@ private:
     std::unique_ptr<FiltParam<T>> m_fparam;
     FilterSelect m_sfilter;
     ApproxSelect m_sapprox;
+    int16_t m_order;
 
 protected:
     std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */

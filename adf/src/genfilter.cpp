@@ -118,6 +118,9 @@ void CalcFilterCoefs<T>::FilterOrder()
     }
 
     kernel = CommonKernel();
+    T ratio_const, kernel_const,
+      ei_ratio_const, eiq_ratio_const,
+      ei_kernel_const, eiq_kernel_const;
 
     switch(m_sapprox)
     {
@@ -129,11 +132,20 @@ void CalcFilterCoefs<T>::FilterOrder()
         order = acosh(std::sqrt(kernel))/acosh(ratio);
         break;
     case ApproxSelect::ELLIPT:
-        T ratio_const = 1/ratio;
+        ratio_const = 1/ratio;
         if(ratio_const > .9999) return /* error code */;
-        T kernel_const = 1/std::sqrt(kernel);
+        kernel_const = 1/std::sqrt(kernel);
         if(ratio_const < 2e-8) return /* error code */;
+        ei_ratio_const = ellip_integral(ratio_const);
+        eiq_ratio_const = ellip_integral(std::sqrt(1-(ratio_const*ratio_const)));
+        ei_kernel_const = ellip_integral(kernel_const);
+        eiq_kernel_const = ellip_integral(std::sqrt(1-(kernel_const*kernel_const)));
+        order = (ei_ratio_const * eiq_kernel_const)/(eiq_ratio_const * ei_kernel_const);
+        break;
+    default: return /* error code */;
     }
+    if(order > 200) return /* error code */;
+    m_order = static_cast<int16_t>(order);
 }
 
 template<typename T>
