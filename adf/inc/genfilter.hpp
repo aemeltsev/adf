@@ -80,12 +80,14 @@ protected:
     void setTypeFilter(FilterSelect& sfilter);
     void setApproxFilter(ApproxSelect& sapprox);
     T CommonKernel();
+    void FilterOrder();
+
 
 public:
     explicit CalcFilterCoefs(std::unique_ptr<FiltParam<T>> fparam, FilterSelect &fselect, ApproxSelect &sapprox) noexcept;
     CalcFilterCoefs() noexcept;
 
-    void FilterOrder();
+
     void NormalCoefs();
     void ButterApprox();
     void ChebyApprox();
