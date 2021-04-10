@@ -15,10 +15,9 @@ include_directories(adf/inc adf/src)
 add_library(adf STATIC
     adf/inc/advmath.hpp
     adf/inc/complex.hpp
-    adf/inc/errornum.hpp
+    adf/inc/base.hpp
     adf/inc/adfilter.hpp
     adf/inc/genfilter.hpp
-    adf/inc/common.hpp
     adf/src/adfilter.cpp
     adf/src/complex.cpp
     adf/src/genfilter.cpp
