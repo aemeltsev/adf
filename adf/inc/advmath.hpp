@@ -10,7 +10,7 @@
 #include <vector>
 #include <array>
 
-#include "common.hpp"
+#include "base.hpp"
 
 namespace adf {
 
