@@ -29,11 +29,10 @@ inline T acosh(T p_arg)
  *  @brief
  *  @param
  *  @param
- *  @param
  *  @return
  */
 template<class T>
-inline T arcsc(T p_eival, T p_eimod, int32_t p_prec)
+inline T arcsc(T p_eival, T p_eimod)
 {
     int i,L;
     T A, B, BT, Y;
@@ -43,21 +42,21 @@ inline T arcsc(T p_eival, T p_eimod, int32_t p_prec)
     Y = 1.0/p_eival;
     L = 0;
 
-    for(i=0; i<p_prec; i++)
+    for(i=0; i<MAX_TERMS; i++)
     {
         BT = A * B;
         A = A + B;
         B = 2 * std::sqrt(BT);
         Y = Y - BT / Y;
         if(Y == 0){
-            Y = std::sqrt(BT)*FLT_MIN;}
-        if(std::fabs(A-B)<(A*FLT_MIN)){break;}
+            Y = std::sqrt(BT)*ERR_SMALL;}
+        if(std::fabs(A-B)<(A*ERR_SMALL)){break;}
         L = 2 * L;
         if(Y < 0.){L++;}
     }
     if(Y < 0.){L++;}
 
-    return ((std::atan(A/Y) + M_PI * L) / A);
+    return ((std::atan(A/Y) + ADF_PI * L) / A);
 }
 
 /**
@@ -82,11 +81,11 @@ inline T asinh(T p_arg)
  *  @return
  */
 template<class T>
-inline void ellip_funcs(T p_eival, T p_eimod, T &sn, T &cn, T &dn, int32_t p_prec)
+inline void ellip_funcs(T p_eival, T p_eimod, T &sn, T &cn, T &dn)
 {
     int16_t i, imax;
-    std::vector<T> A, B, C;
-    std::vector<T> P;
+    std::array<T, MAX_TERMS> A, B, C;
+    std::array<T, MAX_TERMS> P;
 
     p_eimod=p_eimod*p_eimod;
 
@@ -94,17 +93,17 @@ inline void ellip_funcs(T p_eival, T p_eimod, T &sn, T &cn, T &dn, int32_t p_pre
     B[0]=std::sqrt(1-p_eimod);
     C[0]=std::sqrt(p_eimod);
 
-    for(i=1; i<p_prec; i++)
+    for(i=1; i<MAX_TERMS; i++)
     {
         A[i]=(A[i-1]+B[i-1])/2;
         B[i]=std::sqrt(A[i-1]*B[i-1]);
         C[i]=(A[i-1]-B[i-1])/2;
 
-        if(C[i]<FLT_MIN){
+        if(C[i]<ERR_SMALL){
             break;}
     }
 
-    if(i == p_prec){
+    if(i == MAX_TERMS){
         imax=i-1;}
     else{
         imax=i;}
