@@ -7,7 +7,7 @@
 
 #include "advmath.hpp"
 #include "complex.hpp"
-#include "errornum.hpp"
+#include "base.hpp"
 
 namespace adf {
 
@@ -57,7 +57,7 @@ struct FiltParam
 /**
  * @brief
  */
-template<class T>
+template<typename T=double>
 class CalcFilterCoefs
 {
 private:
@@ -70,34 +70,31 @@ protected:
     std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
     std::vector<T> un_acoefs, un_bcoefs; /**< to unnormalise coefs */
     void setFiltParam(
-            std::pair<T, T>& g_passband,
-            std::pair<T, T>& g_stopband,
+            std::pair<T, T>& g_passband, /**< The pasband gain ripple */
+            std::pair<T, T>& g_stopband, /**< The stopband gain ripple */
             std::pair<T, T>& f_passband,
             std::pair<T, T>& f_stopband,
             T fsamp,
-            T gain,
-            int16_t order);
+            T gain
+            /*,int16_t order*/);
     void setTypeFilter(FilterSelect& sfilter);
     void setApproxFilter(ApproxSelect& sapprox);
     T CommonKernel();
     void FilterOrder();
-
-
-public:
-    explicit CalcFilterCoefs(std::unique_ptr<FiltParam<T>> fparam, FilterSelect &fselect, ApproxSelect &sapprox) noexcept;
-    CalcFilterCoefs() noexcept;
-
-
-    void NormalCoefs();
     void ButterApprox();
     void ChebyApprox();
     void ElliptApprox();
     void IChebyApprox();
-    void UnnormCoefs();
+    void NormalCoefs();
     void BSCoefsUnnorm();
     void BPCoefsUnnorm();
     void HPCoefsUnnorm();
     void LPCoefsUnnorm();
+    void UnnormCoefs();
+
+public:
+    explicit CalcFilterCoefs(std::unique_ptr<FiltParam<T>> fparam, FilterSelect &fselect, ApproxSelect &sapprox) noexcept;
+    CalcFilterCoefs() noexcept;
 };
 
 #include "genfilter.cpp"
