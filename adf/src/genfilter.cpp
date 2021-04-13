@@ -13,7 +13,7 @@ CalcFilterCoefs<T>::CalcFilterCoefs(std::unique_ptr<FiltParam<T>> fparam, Filter
     m_fparam->freq_stopband = std::move(fparam->freq_stopband);
     m_fparam->fsamp = std::move(fparam->fsamp);
     m_fparam->gain = std::move(fparam->gain);
-    m_fparam->order = std::move(fparam->order);
+    //m_order = std::move(fparam->order);
 
 }
 
@@ -72,9 +72,13 @@ T CalcFilterCoefs<T>::CommonKernel()
 template<typename T>
 void CalcFilterCoefs<T>::FilterOrder()
 {
-    T kernel, ratio,      /**< */
-      order,              /**< */
+    T kernel, ratio,      /**< Internal consts */
+      order,              /**< Order value */
       wp1, wp2, ws1, ws2; /**< Edge frequency variables */
+
+    T ratio_const, kernel_const,          /**< TODO */
+      ei_ratio_const, eiq_ratio_const,    /**< TODO */
+      ei_kernel_const, eiq_kernel_const;
 
     wp1 = m_fparam->f_passband.first;
     wp2 = m_fparam->f_passband.second;
@@ -119,9 +123,6 @@ void CalcFilterCoefs<T>::FilterOrder()
     }
 
     kernel = CommonKernel();
-    T ratio_const, kernel_const,          /**< */
-      ei_ratio_const, eiq_ratio_const,    /**< */
-      ei_kernel_const, eiq_kernel_const;  /**< */
 
     switch(m_sapprox)
     {
@@ -150,17 +151,26 @@ void CalcFilterCoefs<T>::FilterOrder()
 }
 
 /**
- * @brief
+ * @brief 1. Calculate \f$( \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} )
+ *        2. Calculate radius: \f$( R = \varepsilon^{-1/n} )
+ *        3. In for cycle calculate stable function left-half-plane poles used:
+ *           \f$(
+ *                s_k=\omega_c\bigg[ -\sin\frac{(2K + 1)\pi}{2n} + j\cos\frac{(2K + 1)\pi}{2n} \bigg],~~~K=0,1,\cdots ,n-1
+ *              )
+ *            and angle:
+ *            \f$(
+ *                 \phi = \frac{\pi}{n} \times \frac{(2k+n+1)}{2}
+ *               )
  */
 template<typename T>
 void CalcFilterCoefs<T>::ButterApprox()
 {
-    T epsilon, r, /**< Ripple factor */
+    T epsilon, radius, /**< Ripple factor, radius of the circle*/
       theta, sigma, omega; /**< Real and image position in s-domain value \f$( s = \sigma + j\omega) */
     if(m_order <= 0) return ADF_Error(BadValue, "Error: Using bad value");
 
     epsilon = std::sqrt(std::pow(10.0, -0,1*m_fparam->g_passband.first) - 1);
-    r = std::pow(epsilon, -1.0/m_order);
+    radius = std::pow(epsilon, -1.0/m_order);
 
     m_fparam->gain = 1.;
     int32_t a=0, b=0; /**< Counters */
@@ -168,18 +178,18 @@ void CalcFilterCoefs<T>::ButterApprox()
     if(m_order % 2){
         n_acoefs[a++] = 0.;
         n_acoefs[a++] = 0.;
-        n_acoefs[a++] = r;
+        n_acoefs[a++] = radius;
         n_bcoefs[b++] = 0.;
         n_bcoefs[b++] = 1.;
-        n_bcoefs[b++] = r;
+        n_bcoefs[b++] = radius;
     }
     /**< Other all quadratic terms */
     for(int32_t m=0; m<m_order/2; m++)
     {
         /**< Calculate angle first, then real and imag pos */
         theta = ADF_PI*(2*m + m_order + 1) / (2*m_order);
-        sigma = r * std::cos(theta);
-        omega = r * std::sin(theta);
+        sigma = radius * std::cos(theta);
+        omega = radius * std::sin(theta);
 
         /**< Set the quadratic coefs */
         n_acoefs[a++] = 0.;
@@ -192,13 +202,22 @@ void CalcFilterCoefs<T>::ButterApprox()
 }
 
 /**
- * @brief
+ * @brief 1. Calculate \f$( \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} )
+ *        2. Calculate radius(d): \f$( D = \frac{\sinh^{-1}(\varepsilon^{-1})}{n} )
+ *        3. Calculate angle:
+ *           \f$(
+ *                \phi = \frac{\pi}{n} \times \frac{(2k+1)}{2}
+ *              )
+ *            And poles in the left half of the plane are given by
+ *            \f$(
+ *                 p_k = -\sinh(D)\sin(\phi_k)+j\cosh(D)\cos(\phi_k)~~~k = 1, 2, 3, \cdots, n
+ *               )
  */
 template<typename T>
 void CalcFilterCoefs<T>::ChebyApprox()
 {
-    T epsilon, d, /**< Ripple factor */
-      phi, sigma, omega; /**< Real and image position in s-domain value \f$( s = \sigma + j\omega) */
+    T epsilon, d, /**< Ripple factor, \sigma axis radius */
+      phi, sigma, omega; /**< Angle, real and image position in s-domain value \f$( s = \sigma + j\omega) */
 
     if(m_order <= 0) return ADF_Error(BadValue, "Error: Using bad value");
 
@@ -238,6 +257,10 @@ void CalcFilterCoefs<T>::ChebyApprox()
     }
 }
 
+/**
+ * @brief 1. Calculate \f$( \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} )
+ *        TODO
+ */
 template<typename T>
 void CalcFilterCoefs<T>::ElliptApprox()
 {
@@ -275,8 +298,7 @@ void CalcFilterCoefs<T>::ElliptApprox()
     default: return /* error code */;
     }
 
-    kernel = (std::pow(10.0, -0,1*m_fparam->g_stopband.first) - 1) /
-               (std::pow(10.0, -0,1*m_fparam->g_passband.first) - 1);
+    kernel = CommonKernel();
     ratio_const = 1/ratio;
     kernel_const = 1/std::sqrt(kernel);
     ei_ratio_const = ellip_integral(ratio_const);
@@ -327,6 +349,9 @@ void CalcFilterCoefs<T>::ElliptApprox()
     }
 }
 
+/**
+ * @btief TODO
+ */
 template<typename T>
 void CalcFilterCoefs<T>::IChebyApprox()
 {
