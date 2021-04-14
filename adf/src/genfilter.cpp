@@ -167,7 +167,6 @@ void CalcFilterCoefs<T>::ButterApprox()
 {
     T epsilon, radius, /**< Ripple factor, radius of the circle*/
       theta, sigma, omega; /**< Real and image position in s-domain value \f$( s = \sigma + j\omega) */
-    if(m_order <= 0) return ADF_Error(BadValue, "Error: Using bad value");
 
     epsilon = std::sqrt(std::pow(10.0, -0,1*m_fparam->g_passband.first) - 1);
     radius = std::pow(epsilon, -1.0/m_order);
@@ -218,8 +217,6 @@ void CalcFilterCoefs<T>::ChebyApprox()
 {
     T epsilon, d, /**< Ripple factor, \sigma axis radius */
       phi, sigma, omega; /**< Angle, real and image position in s-domain value \f$( s = \sigma + j\omega) */
-
-    if(m_order <= 0) return ADF_Error(BadValue, "Error: Using bad value");
 
     epsilon = std::sqrt(std::pow(10.0, -0,1*m_fparam->g_passband.first) - 1);
     d = asinh(1/epsilon) / m_order;
@@ -274,8 +271,6 @@ void CalcFilterCoefs<T>::ElliptApprox()
       odd,                              /**< Check order value */
       vo, fm,                           /**< Internal const */
       sigma, omega, zero;               /**< Pole and zero */
-
-    if(m_order <= 0) return ADF_Error(BadValue, "Error: Using bad value");
 
     epsilon = std::sqrt(std::pow(10., -0,1*m_fparam->g_passband.first) - 1);
 
@@ -359,8 +354,6 @@ void CalcFilterCoefs<T>::IChebyApprox()
       mag_inv,            /**< Using for inverse magnitude value */
       phi, sigma, omega,  /**< Real and image position in s-domain value \f$( s = \sigma + j\omega) */
       zero;               /**< Zero value */
-
-    if(m_order <= 0) return ADF_Error(BadValue, "Error: Using bad value");
 
     epsilon = std::sqrt(std::pow(10.0, -0,1*m_fparam->g_stopband.first) - 1.);
     d = asinh(1/epsilon) / m_order;
@@ -447,16 +440,63 @@ void CalcFilterCoefs<T>::BPCoefsUnnorm()
 
 }
 
+/**
+ * @brief
+ */
 template<typename T>
-void CalcFilterCoefs<T>::HPCoefsUnnorm()
+void CalcFilterCoefs<T>::HPCoefsUnnorm(T freq)
 {
+    int32_t nb_coef, qd_count,
+            ps_start;
+    if(m_order % 2){
+        m_fparam->gain *= (n_acoefs[2]/n_bcoefs[2]);
+        un_acoefs[2] = freq*n_acoefs[1]/n_acoefs[2];
+        un_acoefs[1] = 1.;
+        un_bcoefs[2] = freq/n_bcoefs[2];
+        ps_start = 1;
+    }
+    else{
+        ps_start = 0;
+    }
 
+    for(qd_count=ps_start; qd_count < (m_order+1)/2; ps_start++)
+    {
+        nb_coef = qd_count*3;
+        m_fparam->gain *= (n_acoefs[2]/n_bcoefs[2]);
+        un_acoefs[nb_coef+1] = n_acoefs[nb_coef+1] * (freq/n_acoefs[nb_coef+2]);
+        un_acoefs[nb_coef+2] = freq * freq * n_acoefs[nb_coef]/n_acoefs[nb_coef+2];
+        un_acoefs[nb_coef] = 1.;
+        un_bcoefs[nb_coef+1] = n_bcoefs[nb_coef+1] * (freq/n_bcoefs[nb_coef+2]);
+        un_bcoefs[nb_coef+2] = freq * freq * n_bcoefs[nb_coef]/n_bcoefs[nb_coef+2];
+        un_bcoefs[nb_coef] = 1.;
+    }
 }
 
+/**
+ * @brief
+ */
 template<typename T>
-void CalcFilterCoefs<T>::LPCoefsUnnorm()
+void CalcFilterCoefs<T>::LPCoefsUnnorm(T freq)
 {
+    int32_t nb_coef, qd_count,
+            ps_start;
+    if(m_order % 2){
+        un_acoefs[2] = n_acoefs[2]*freq;
+        un_bcoefs[2] = n_bcoefs[2]*freq;
+        ps_start = 1;
+    }
+    else{
+        ps_start = 0;
+    }
 
+    for(qd_count=ps_start; qd_count < (m_order+1)/2; ps_start++)
+    {
+        nb_coef = qd_count*3;
+        un_acoefs[nb_coef+1] = n_acoefs[nb_coef+1]*freq;
+        un_acoefs[nb_coef+2] = n_acoefs[nb_coef+2]*(freq*freq);
+        un_bcoefs[nb_coef+1] = n_bcoefs[nb_coef+1]*freq;
+        un_bcoefs[nb_coef+2] = n_bcoefs[nb_coef+2]*freq;
+    }
 }
 
 template<typename T>
