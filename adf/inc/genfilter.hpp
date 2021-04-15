@@ -86,10 +86,10 @@ protected:
     void ElliptApprox();
     void IChebyApprox();
     void NormalCoefs();
-    void BSCoefsUnnorm();
+    void BSCoefsUnnorm(T un_bandwith, T un_centrfreq);
     void BPCoefsUnnorm();
-    void HPCoefsUnnorm();
-    void LPCoefsUnnorm();
+    void HPCoefsUnnorm(T freq);
+    void LPCoefsUnnorm(T freq);
     void UnnormCoefs();
 
 public:
