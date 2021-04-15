@@ -7,7 +7,7 @@
 #include <cmath>
 #include "advmath.hpp"
 #include "complex.hpp"
-#include "errornum.hpp"
+#include "base.hpp"
 
 namespace adf {
 
