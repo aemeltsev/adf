@@ -429,8 +429,11 @@ void CalcFilterCoefs<T>::NormalCoefs()
 }
 
 template<typename T>
-void CalcFilterCoefs<T>::BSCoefsUnnorm()
+void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
 {
+    std::vector<T> origin_numerator, origin_denominator, /**< Original numerator and denominator */
+                   new_numerator, new_denominator;       /**< New numerator and denominator */
+    complex<T> A, B, C, D; /**< Temp complex value */
 
 }
 
@@ -441,13 +444,19 @@ void CalcFilterCoefs<T>::BPCoefsUnnorm()
 }
 
 /**
- * @brief
+ * @brief Method the denormalization of coefficients by frequency and
+ *        impedance for high-pass filter type:
+ *        \f[
+ *             S(h) = \frac{\omega_0}{s} \bigg( \frac{\omega_{PB}}{s_n} \bigg)
+ *           ]\f
+ *        The gain constant multiplied by \f$(A_2/B_2)\f$
  */
 template<typename T>
 void CalcFilterCoefs<T>::HPCoefsUnnorm(T freq)
 {
     int32_t nb_coef, qd_count,
             ps_start;
+    /**< First order type, if odd, set start position */
     if(m_order % 2){
         m_fparam->gain *= (n_acoefs[2]/n_bcoefs[2]);
         un_acoefs[2] = freq*n_acoefs[1]/n_acoefs[2];
@@ -473,13 +482,25 @@ void CalcFilterCoefs<T>::HPCoefsUnnorm(T freq)
 }
 
 /**
- * @brief
+ * @brief Method the denormalization of coefficients by frequency and
+ *        impedance for low-pass filter type:
+ *        \f[
+ *             Z_s = z_0 \times Z_n(\omega_{PB} \times  s_n)
+ *            ]\f
+ *        and denormalized pole and zero defined as:
+ *        \f[
+ *             s = p \times z(\omega_{PB} \times p_n, \omega_{PB} \times z_n)
+ *           ]\f
+ *        The gain constant is unchanged.
+ *        See ECE 6414: Continuous Time Filters(P. Allen)
+ *
  */
 template<typename T>
 void CalcFilterCoefs<T>::LPCoefsUnnorm(T freq)
 {
     int32_t nb_coef, qd_count,
             ps_start;
+    /**< First order type, if odd, set start position */
     if(m_order % 2){
         un_acoefs[2] = n_acoefs[2]*freq;
         un_bcoefs[2] = n_bcoefs[2]*freq;
