@@ -432,9 +432,9 @@ void CalcFilterCoefs<T>::NormalCoefs()
 template<typename T>
 void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
 {
-    T qd_count, origin_coef, new_coef, ps_start,         /**< Counters */
-      origin_qd_count,                                   /**< Original number of quads values */
+    T origin_qd_count,                                   /**< Original number of quads values */
       origin_order;                                      /**< Original order */
+    int32_t qd_count, origin_coef, new_coef, ps_start;   /**< Counters */
     int32_t size_coef;                                   /**< Size vector value */
     std::vector<T> origin_numerator, origin_denominator, /**< Original numerator and denominator */
                    new_numerator, new_denominator;       /**< New numerator and denominator */
