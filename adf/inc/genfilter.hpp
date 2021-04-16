@@ -65,6 +65,7 @@ private:
     FilterSelect m_sfilter;
     ApproxSelect m_sapprox;
     int16_t m_order;
+    int16_t m_gain;
 
 protected:
     std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
