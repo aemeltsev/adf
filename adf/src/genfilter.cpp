@@ -24,7 +24,8 @@ CalcFilterCoefs<T>::CalcFilterCoefs() noexcept
 }
 
 template<typename T>
-void CalcFilterCoefs<T>::setFiltParam(std::pair<T, T>& g_passband,
+void CalcFilterCoefs<T>::setFiltParam(
+        std::pair<T, T>& g_passband,
         std::pair<T, T>& g_stopband,
         std::pair<T, T>& f_passband,
         std::pair<T, T>& f_stopband,
@@ -431,6 +432,10 @@ void CalcFilterCoefs<T>::NormalCoefs()
 template<typename T>
 void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
 {
+    T qd_count, origin_coef, new_coef, ps_start,         /**< Counters */
+      origin_qd_count,                                   /**< Original number of quads values */
+      origin_order;                                      /**< Original order */
+    int32_t size_coef;                                   /**< Size vector value */
     std::vector<T> origin_numerator, origin_denominator, /**< Original numerator and denominator */
                    new_numerator, new_denominator;       /**< New numerator and denominator */
     complex<T> A, B, C, D; /**< Temp complex value */
