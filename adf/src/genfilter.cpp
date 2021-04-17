@@ -55,10 +55,10 @@ void CalcFilterCoefs<T>::setApproxFilter(ApproxSelect& sapprox)
 
 /**
  * @brief This the common value for all filter approximation methods
- *        \f$(\varepsilon_s / \varepsilon_p)
- *        \f$(\varepsilon_s = 10.0^{-0.1*a_s}-1) stopband gain adjustment factor and
- *        passband gain ratio \f$(\varepsilon_p = 10.0^{-0.1*a_p}-1)
- * @return Ratio value of the suppression \f$(R_s)dB/\f$(R_p)dB
+ *        \f$\varepsilon_s / \varepsilon_p\f$
+ *        \f$\varepsilon_s = 10.0^{-0.1*a_s}-1\f$ stopband gain adjustment factor and
+ *        passband gain ratio \f$\varepsilon_p = 10.0^{-0.1*a_p}-1\f$
+ * @return Ratio value of the suppression \f$(R_s)dB/\f$(R_p)dB\f$
  */
 template<typename T>
 T CalcFilterCoefs<T>::CommonKernel()
@@ -67,10 +67,15 @@ T CalcFilterCoefs<T>::CommonKernel()
             (std::pow(10.0,-0.1*m_fparam->gain_passband.first)-1));
 }
 
+/**
+ * @brief The normalization to relative of the passband cutoff frequency
+ *        \f$\omega = \fract{f_1}{f_2}\f$
+ * @return Ratio value of the normalization by frequency
+ */
 template <typename T>
 T CalcFilterCoefs<T>::FreqNorm()
 {
-    T ratio,              /**< The normalization to relative of the passband cutoff frequency */
+    T ratio,              /**< Return ratio value */
       wp1, wp2, ws1, ws2; /**< Edge frequency variables */
 
     wp1 = m_fparam->f_passband.first;
@@ -121,17 +126,16 @@ T CalcFilterCoefs<T>::FreqNorm()
  * @brief
  */
 template<typename T>
-void CalcFilterCoefs<T>::FilterOrder()
+T CalcFilterCoefs<T>::FilterOrder()
 {
-    T kernel, ratio,      /**< Internal consts */
-      order;              /**< Order value */
+    T order;              /**< Return order value */
 
     T ratio_const, kernel_const,          /**< TODO */
       ei_ratio_const, eiq_ratio_const,    /**< TODO */
       ei_kernel_const, eiq_kernel_const;
 
-    kernel = CommonKernel();
-    ratio = FreqNorm();
+    T kernel = CommonKernel();
+    T ratio = FreqNorm();
 
     switch(m_sapprox)
     {
