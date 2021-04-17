@@ -67,19 +67,11 @@ T CalcFilterCoefs<T>::CommonKernel()
             (std::pow(10.0,-0.1*m_fparam->gain_passband.first)-1));
 }
 
-/**
- * @brief
- */
-template<typename T>
-void CalcFilterCoefs<T>::FilterOrder()
+template <typename T>
+T CalcFilterCoefs<T>::FreqNorm()
 {
-    T kernel, ratio,      /**< Internal consts */
-      order,              /**< Order value */
+    T ratio,              /**< The normalization to relative of the passband cutoff frequency */
       wp1, wp2, ws1, ws2; /**< Edge frequency variables */
-
-    T ratio_const, kernel_const,          /**< TODO */
-      ei_ratio_const, eiq_ratio_const,    /**< TODO */
-      ei_kernel_const, eiq_kernel_const;
 
     wp1 = m_fparam->f_passband.first;
     wp2 = m_fparam->f_passband.second;
@@ -120,10 +112,26 @@ void CalcFilterCoefs<T>::FilterOrder()
         }
         ratio = (wp2 - wp1) / (ws2 - ws1);
         break;
-    default: return /* error code */;
+    default: return ADF_Error(BadFilter, "Error: Bad type of filter");;
     }
+    return ratio;
+}
+
+/**
+ * @brief
+ */
+template<typename T>
+void CalcFilterCoefs<T>::FilterOrder()
+{
+    T kernel, ratio,      /**< Internal consts */
+      order;              /**< Order value */
+
+    T ratio_const, kernel_const,          /**< TODO */
+      ei_ratio_const, eiq_ratio_const,    /**< TODO */
+      ei_kernel_const, eiq_kernel_const;
 
     kernel = CommonKernel();
+    ratio = FreqNorm();
 
     switch(m_sapprox)
     {
@@ -137,13 +145,16 @@ void CalcFilterCoefs<T>::FilterOrder()
     case ApproxSelect::ELLIPT:
         ratio_const = 1/ratio;
         if(ratio_const > .9999) return /* error code */;
+
         kernel_const = 1/std::sqrt(kernel);
         if(ratio_const < 2e-8) return /* error code */;
+
         ei_ratio_const = ellip_integral(ratio_const);
         eiq_ratio_const = ellip_integral(std::sqrt(1-(ratio_const*ratio_const)));
         ei_kernel_const = ellip_integral(kernel_const);
         eiq_kernel_const = ellip_integral(std::sqrt(1-(kernel_const*kernel_const)));
         order = (ei_ratio_const * eiq_kernel_const)/(eiq_ratio_const * ei_kernel_const);
+
         break;
     default: return /* error code */;
     }
