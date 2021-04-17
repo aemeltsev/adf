@@ -167,7 +167,7 @@ void CalcFilterCoefs<T>::FilterOrder()
     default: return ADF_Error(BadFilter, "Error: Bad approximation value");
     }
     if(order > 200) return ADF_Error(BadValue, "Error: Using bad value");
-    m_order = static_cast<int16_t>(order);
+    m_order = static_cast<int16_t>(std::ceil(+order));
 }
 
 /**
