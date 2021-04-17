@@ -123,15 +123,19 @@ T CalcFilterCoefs<T>::FreqNorm()
 }
 
 /**
- * @brief
+ * @brief The order of the polynomial for the approximation,
+ *        as defined in the filter specification, which is the order of the filter.
+ *        As example Butterworth:
+ *        \f[ n \geq \frac{\log(\frac{\varepsilon_s^2}{\varepsilon_p^2})}{2\log(\frac{\omega_s}{\omega_p})} ]\f
+ * @return Order of the polynom value
  */
 template<typename T>
-T CalcFilterCoefs<T>::FilterOrder()
+void CalcFilterCoefs<T>::FilterOrder()
 {
     T order;              /**< Return order value */
 
-    T ratio_const, kernel_const,          /**< TODO */
-      ei_ratio_const, eiq_ratio_const,    /**< TODO */
+    T ratio_const, kernel_const,          /**< Temp values, */
+      ei_ratio_const, eiq_ratio_const,    /**< for elliptic approximation */
       ei_kernel_const, eiq_kernel_const;
 
     T kernel = CommonKernel();
@@ -148,10 +152,10 @@ T CalcFilterCoefs<T>::FilterOrder()
         break;
     case ApproxSelect::ELLIPT:
         ratio_const = 1/ratio;
-        if(ratio_const > .9999) return /* error code */;
+        if(ratio_const > .9999) return ADF_Error(BadValue, "Error: Using bad value");
 
         kernel_const = 1/std::sqrt(kernel);
-        if(ratio_const < 2e-8) return /* error code */;
+        if(ratio_const < 2e-8) return ADF_Error(BadValue, "Error: Using bad value");
 
         ei_ratio_const = ellip_integral(ratio_const);
         eiq_ratio_const = ellip_integral(std::sqrt(1-(ratio_const*ratio_const)));
@@ -160,9 +164,9 @@ T CalcFilterCoefs<T>::FilterOrder()
         order = (ei_ratio_const * eiq_kernel_const)/(eiq_ratio_const * ei_kernel_const);
 
         break;
-    default: return /* error code */;
+    default: return ADF_Error(BadFilter, "Error: Bad approximation value");
     }
-    if(order > 200) return /* error code */;
+    if(order > 200) return ADF_Error(BadValue, "Error: Using bad value");
     m_order = static_cast<int16_t>(order);
 }
 
@@ -417,6 +421,9 @@ void CalcFilterCoefs<T>::IChebyApprox()
     }
 }
 
+/**
+ * @brief TODO
+ */
 template<typename T>
 void CalcFilterCoefs<T>::NormalCoefs()
 {
@@ -444,6 +451,9 @@ void CalcFilterCoefs<T>::NormalCoefs()
 
 }
 
+/**
+ * @brief
+ */
 template<typename T>
 void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
 {
@@ -457,6 +467,9 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
 
 }
 
+/**
+ * @brief
+ */
 template<typename T>
 void CalcFilterCoefs<T>::BPCoefsUnnorm()
 {
