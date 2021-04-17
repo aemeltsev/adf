@@ -68,7 +68,7 @@ private:
     int16_t m_gain;
     T CommonKernel();
     T FreqNorm();
-    T FilterOrder();
+    void FilterOrder();
 
 protected:
     std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
