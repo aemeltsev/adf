@@ -68,6 +68,7 @@ private:
     int16_t m_gain;
     T CommonKernel();
     T FreqNorm();
+    T FilterOrder();
 
 protected:
     std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
@@ -82,7 +83,7 @@ protected:
             /*,int16_t order*/);
     void setTypeFilter(FilterSelect& sfilter);
     void setApproxFilter(ApproxSelect& sapprox);
-    void FilterOrder();
+
     void ButterApprox();
     void ChebyApprox();
     void ElliptApprox();
