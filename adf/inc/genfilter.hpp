@@ -66,6 +66,8 @@ private:
     ApproxSelect m_sapprox;
     int16_t m_order;
     int16_t m_gain;
+    T CommonKernel();
+    T FreqNorm();
 
 protected:
     std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
@@ -80,7 +82,6 @@ protected:
             /*,int16_t order*/);
     void setTypeFilter(FilterSelect& sfilter);
     void setApproxFilter(ApproxSelect& sapprox);
-    T CommonKernel();
     void FilterOrder();
     void ButterApprox();
     void ChebyApprox();
