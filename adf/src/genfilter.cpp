@@ -171,16 +171,16 @@ void CalcFilterCoefs<T>::FilterOrder()
 }
 
 /**
- * @brief 1. Calculate \f$( \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} )
- *        2. Calculate radius: \f$( R = \varepsilon^{-1/n} )
+ * @brief 1. Calculate \f$ \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} \f$
+ *        2. Calculate radius: \f$ R = \varepsilon^{-1/n} \f$
  *        3. In for cycle calculate stable function left-half-plane poles used:
- *           \f$(
+ *           \f$[
  *                s_k=\omega_c\bigg[ -\sin\frac{(2K + 1)\pi}{2n} + j\cos\frac{(2K + 1)\pi}{2n} \bigg],~~~K=0,1,\cdots ,n-1
- *              )
+ *              ]\f$
  *            and angle:
- *            \f$(
+ *            \f$[
  *                 \phi = \frac{\pi}{n} \times \frac{(2k+n+1)}{2}
- *               )
+ *               ]\f$
  */
 template<typename T>
 void CalcFilterCoefs<T>::ButterApprox()
@@ -465,6 +465,9 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
                    new_numerator, new_denominator;       /**< New numerator and denominator */
     complex<T> A, B, C, D; /**< Temp complex value */
 
+    origin_order = m_order;
+    origin_qd_count = (origin_order + 1) / 2;
+    m_order = origin_order * 2;
 }
 
 /**
