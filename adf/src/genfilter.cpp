@@ -459,11 +459,9 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
 {
     T origin_qd_count,                                   /**< Original number of quads values */
       origin_order;                                      /**< Original order */
-    int32_t origin_coef, new_coef, pos_start;   /**< Counters */
-    std::size_t size_coef;                                   /**< Size vector value */
-    std::vector<T> tmp_numerator, tmp_denominator; /**< Original numerator and denominator */
-                   //new_numerator, new_denominator;       /**< New numerator and denominator */
-    std::unique_ptr<complex<T>> A, B, C, D, E; /**< Temp complex value */
+    int32_t origin_coef, new_coef, pos_start;            /**< Counters */
+    std::size_t size_coef;                               /**< Size vector value */
+    std::unique_ptr<complex<T>> A, B, C, D, E;           /**< Temp complex value */
 
     /**
       Store the original number of the order,
@@ -474,18 +472,18 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
     /**<  */
     size_coef = 3*origin_order;
     /**<  */
-    tmp_numerator.reserve(size_coef);
-    tmp_denominator.reserve(size_coef);
+    un_acoefs.reserve(size_coef);
+    un_bcoefs.reserve(size_coef);
     /**< If original order is odd convert first order factor to quadratic, pos_start indicate start point for loop */
     if(origin_order % 2)
     {
         m_gain *= (n_acoefs[2] / n_bcoefs[2]);
-        tmp_numerator[0] = 1.;
-        tmp_numerator[1] = un_bandwith * n_acoefs[1] / n_acoefs[2];
-        tmp_numerator[2] = un_centrfreq * un_centrfreq;
-        tmp_denominator[0] = 1.;
-        tmp_denominator[1] = un_bandwith * n_bcoefs[1] / n_bcoefs[2];
-        tmp_denominator[3] = un_centrfreq * un_centrfreq;
+        un_acoefs[0] = 1.;
+        un_acoefs[1] = un_bandwith * n_acoefs[1] / n_acoefs[2];
+        un_acoefs[2] = un_centrfreq * un_centrfreq;
+        un_bcoefs[0] = 1.;
+        un_bcoefs[1] = un_bandwith * n_bcoefs[1] / n_bcoefs[2];
+        un_bcoefs[3] = un_centrfreq * un_centrfreq;
         pos_start = 1;
     }
     else
@@ -500,12 +498,12 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
 
         if(n_acoefs[origin_coef] == 0)
         {
-            tmp_numerator[new_coef] = 1.;
-            tmp_numerator[new_coef+1] = 0.;
-            tmp_numerator[new_coef+2] = un_centrfreq * un_centrfreq;
-            tmp_numerator[new_coef+3] = 1.;
-            tmp_numerator[new_coef+4] = 0.;
-            tmp_numerator[new_coef+5] = un_centrfreq * un_centrfreq;
+            un_acoefs[new_coef] = 1.;
+            un_acoefs[new_coef+1] = 0.;
+            un_acoefs[new_coef+2] = un_centrfreq * un_centrfreq;
+            un_acoefs[new_coef+3] = 1.;
+            un_acoefs[new_coef+4] = 0.;
+            un_acoefs[new_coef+5] = un_centrfreq * un_centrfreq;
         }
 
         else
@@ -520,6 +518,17 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
             E = std::make_unique<complex<T>>(first_comp_quad.second);
 
             /**< Make required substitutions, factorization again */
+            A = std::make_unique<complex<T>>(1, 0);
+            complex<T> mul_tmp(un_bandwith, 0);
+            complex<T> num_tmp(1, 0);
+            complex<T> result = -(num_tmp/D)*(-mul_tmp);
+            B = std::make_unique<complex<T>>(result);
+            C = std::make_unique<complex<T>>(un_centrfreq * un_centrfreq, 0);
+
+            std::pair<complex<T>, complex<T>> second_comp_quad = quadr(&A, &B, &C);
+            D = std::make_unique<complex<T>>(second_comp_quad.first);
+            E = std::make_unique<complex<T>>(second_comp_quad.second);
+
 
         }
     }
