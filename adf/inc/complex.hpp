@@ -5,6 +5,7 @@
 #define COMPLEX_H
 #include <iostream>
 #include <cstdint>
+#include <memory>
 #include <cmath>
 #include <utility>
 
@@ -114,11 +115,11 @@ public:
  *  @return - returns the square root of complex number
  */
 template<class T>
-inline complex<T> sqrt(complex<T> &p_val)
+inline complex<T> sqrt(std::unique_ptr<complex<T>> p_val)
 {
-    T real = std::sqrt(p_val.mag()) * std::cos(p_val.arg()/2.);
-    T imag = std::sqrt(p_val.mag()) * std::sin(p_val.arg()/2.);
-    return complex<T>(real, imag);
+    auto real = std::sqrt(p_val->mag()) * std::cos(p_val->arg()/2.);
+    auto imag = std::sqrt(p_val->mag()) * std::sin(p_val->arg()/2.);
+    return complex<T>(static_cast<T>(real), static_cast<T>(imag));
 }
 
 /**
