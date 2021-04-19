@@ -111,7 +111,7 @@ public:
 
 /**
  *  @brief - square root of complex number
- *  @param
+ *  @param - unique pointer to complex value
  *  @return - returns the square root of complex number
  */
 template<class T>
