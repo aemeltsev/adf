@@ -461,7 +461,7 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
       origin_order;                                      /**< Original order */
     int32_t origin_coef, new_coef, pos_start;            /**< Counters */
     std::size_t size_coef;                               /**< Size vector value */
-    std::unique_ptr<complex<T>> A, B, C, D, E;           /**< Temp complex value */
+    complex<T> A, B, C, D, E;                            /**< Temp complex value */
 
     /**
       Store the original number of the order,
@@ -509,27 +509,34 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
         else
         {
             /**< Convert coefficients to complex, then factorization */
-            A = std::make_unique<complex<T>>(n_acoefs[origin_coef], 0);
-            B = std::make_unique<complex<T>>(n_acoefs[origin_coef+1], 0);
-            C = std::make_unique<complex<T>>(n_acoefs[origin_coef+2], 0);
+            A = complex<T>(n_acoefs[origin_coef], 0);
+            B = complex<T>(n_acoefs[origin_coef+1], 0);
+            C = complex<T>(n_acoefs[origin_coef+2], 0);
 
             std::pair<complex<T>, complex<T>> first_comp_quad = quadr(&A, &B, &C);
-            D = std::make_unique<complex<T>>(first_comp_quad.first);
-            E = std::make_unique<complex<T>>(first_comp_quad.second);
+            D = complex<T>(first_comp_quad.first);
+            E = complex<T>(first_comp_quad.second);
 
             /**< Make required substitutions, factorization again */
-            A = std::make_unique<complex<T>>(1, 0);
+            A = complex<T>(1, 0);
             complex<T> mul_tmp(un_bandwith, 0);
             complex<T> num_tmp(1, 0);
-            complex<T> result = -(num_tmp/D)*(-mul_tmp);
-            B = std::make_unique<complex<T>>(result);
-            C = std::make_unique<complex<T>>(un_centrfreq * un_centrfreq, 0);
+            complex<T> result = (-(num_tmp/D))*(-mul_tmp);
+            B = result;
+            C = complex<T>(un_centrfreq * un_centrfreq, 0);
 
             std::pair<complex<T>, complex<T>> second_comp_quad = quadr(&A, &B, &C);
-            D = std::make_unique<complex<T>>(second_comp_quad.first);
-            E = std::make_unique<complex<T>>(second_comp_quad.second);
+            D = complex<T>(second_comp_quad.first);
+            E = complex<T>(second_comp_quad.second);
 
-
+            un_acoefs[new_coef] = 1.;
+            un_acoefs[new_coef+1] = -2. * D.getReal();
+            complex<T> fc_real = D * D.conj();
+            un_acoefs[new_coef+2] = fc_real.getReal();
+            un_acoefs[new_coef+3] = 1.;
+            un_acoefs[new_coef+4] = -2. * E.getReal();
+            complex<T> sc_real = E * E.conj();
+            un_acoefs[new_coef+5] = sc_real.getReal();
         }
     }
 }
