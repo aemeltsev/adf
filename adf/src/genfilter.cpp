@@ -459,15 +459,70 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
 {
     T origin_qd_count,                                   /**< Original number of quads values */
       origin_order;                                      /**< Original order */
-    int32_t qd_count, origin_coef, new_coef, ps_start;   /**< Counters */
-    int32_t size_coef;                                   /**< Size vector value */
-    std::vector<T> origin_numerator, origin_denominator, /**< Original numerator and denominator */
-                   new_numerator, new_denominator;       /**< New numerator and denominator */
-    complex<T> A, B, C, D; /**< Temp complex value */
+    int32_t origin_coef, new_coef, pos_start;   /**< Counters */
+    std::size_t size_coef;                                   /**< Size vector value */
+    std::vector<T> tmp_numerator, tmp_denominator; /**< Original numerator and denominator */
+                   //new_numerator, new_denominator;       /**< New numerator and denominator */
+    std::unique_ptr<complex<T>> A, B, C, D, E; /**< Temp complex value */
 
+    /**
+      Store the original number of the order,
+    */
     origin_order = m_order;
     origin_qd_count = (origin_order + 1) / 2;
     m_order = origin_order * 2;
+    /**<  */
+    size_coef = 3*origin_order;
+    /**<  */
+    tmp_numerator.reserve(size_coef);
+    tmp_denominator.reserve(size_coef);
+    /**< If original order is odd convert first order factor to quadratic, pos_start indicate start point for loop */
+    if(origin_order % 2)
+    {
+        m_gain *= (n_acoefs[2] / n_bcoefs[2]);
+        tmp_numerator[0] = 1.;
+        tmp_numerator[1] = un_bandwith * n_acoefs[1] / n_acoefs[2];
+        tmp_numerator[2] = un_centrfreq * un_centrfreq;
+        tmp_denominator[0] = 1.;
+        tmp_denominator[1] = un_bandwith * n_bcoefs[1] / n_bcoefs[2];
+        tmp_denominator[3] = un_centrfreq * un_centrfreq;
+        pos_start = 1;
+    }
+    else
+    { pos_start = 0;}
+    /**<  */
+    for(std::size_t qd_count = pos_start; qd_count < origin_qd_count; qd_count++)
+    {
+        origin_coef = qd_count * 3;
+        new_coef = qd_count * 6 - pos_start * 3;
+
+        m_gain *= (n_acoefs[origin_coef+2] / n_bcoefs[origin_coef+2]);
+
+        if(n_acoefs[origin_coef] == 0)
+        {
+            tmp_numerator[new_coef] = 1.;
+            tmp_numerator[new_coef+1] = 0.;
+            tmp_numerator[new_coef+2] = un_centrfreq * un_centrfreq;
+            tmp_numerator[new_coef+3] = 1.;
+            tmp_numerator[new_coef+4] = 0.;
+            tmp_numerator[new_coef+5] = un_centrfreq * un_centrfreq;
+        }
+
+        else
+        {
+            /**< Convert coefficients to complex, then factorization */
+            A = std::make_unique<complex<T>>(n_acoefs[origin_coef], 0);
+            B = std::make_unique<complex<T>>(n_acoefs[origin_coef+1], 0);
+            C = std::make_unique<complex<T>>(n_acoefs[origin_coef+2], 0);
+
+            std::pair<complex<T>, complex<T>> first_comp_quad = quadr(&A, &B, &C);
+            D = std::make_unique<complex<T>>(first_comp_quad.first);
+            E = std::make_unique<complex<T>>(first_comp_quad.second);
+
+            /**< Make required substitutions, factorization again */
+
+        }
+    }
 }
 
 /**
@@ -490,30 +545,29 @@ void CalcFilterCoefs<T>::BPCoefsUnnorm()
 template<typename T>
 void CalcFilterCoefs<T>::HPCoefsUnnorm(T freq)
 {
-    int32_t nb_coef, qd_count,
-            ps_start;
+    int32_t coef_numb, pos_start; /**< Number of coefficient, and position start */
     /**< First order type, if odd, set start position */
     if(m_order % 2){
         m_fparam->gain *= (n_acoefs[2]/n_bcoefs[2]);
         un_acoefs[2] = freq*n_acoefs[1]/n_acoefs[2];
         un_acoefs[1] = 1.;
         un_bcoefs[2] = freq/n_bcoefs[2];
-        ps_start = 1;
+        pos_start = 1;
     }
     else{
-        ps_start = 0;
+        pos_start = 0;
     }
 
-    for(qd_count=ps_start; qd_count < (m_order+1)/2; ps_start++)
+    for(int32_t qd_count = pos_start; qd_count < (m_order+1)/2; qd_count++)
     {
-        nb_coef = qd_count*3;
+        coef_numb = qd_count*3;
         m_fparam->gain *= (n_acoefs[2]/n_bcoefs[2]);
-        un_acoefs[nb_coef+1] = n_acoefs[nb_coef+1] * (freq/n_acoefs[nb_coef+2]);
-        un_acoefs[nb_coef+2] = freq * freq * n_acoefs[nb_coef]/n_acoefs[nb_coef+2];
-        un_acoefs[nb_coef] = 1.;
-        un_bcoefs[nb_coef+1] = n_bcoefs[nb_coef+1] * (freq/n_bcoefs[nb_coef+2]);
-        un_bcoefs[nb_coef+2] = freq * freq * n_bcoefs[nb_coef]/n_bcoefs[nb_coef+2];
-        un_bcoefs[nb_coef] = 1.;
+        un_acoefs[coef_numb+1] = n_acoefs[coef_numb+1] * (freq/n_acoefs[coef_numb+2]);
+        un_acoefs[coef_numb+2] = freq * freq * n_acoefs[coef_numb]/n_acoefs[coef_numb+2];
+        un_acoefs[coef_numb] = 1.;
+        un_bcoefs[coef_numb+1] = n_bcoefs[coef_numb+1] * (freq/n_bcoefs[coef_numb+2]);
+        un_bcoefs[coef_numb+2] = freq * freq * n_bcoefs[coef_numb]/n_bcoefs[coef_numb+2];
+        un_bcoefs[coef_numb] = 1.;
     }
 }
 
