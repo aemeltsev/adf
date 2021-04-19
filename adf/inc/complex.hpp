@@ -73,21 +73,21 @@ public:
     /**
      * @brief overloadings
      */
-    friend bool operator==(complex<T> &p_fr, complex<T> &p_sc);
-    friend bool operator!=(complex<T> &p_fr, complex<T> &p_sc);
+    template<typename U> friend bool operator==(complex<U> &p_fr, complex<U> &p_sc);
+    template<typename U> friend bool operator!=(complex<U> &p_fr, complex<U> &p_sc);
 
-    friend complex<T> operator+(complex<T> &p_fr, complex<T> &p_sc);
-    friend complex<T> operator+(T &p_fr, complex<T> &p_sc);
-    friend complex<T> operator+(complex<T> &p_sc, T &p_fr);
-    friend complex<T> operator-(complex<T> &p_fr, complex<T> &p_sc);
-    friend complex<T> operator-(T &p_fr, complex<T> &p_sc);
-    friend complex<T> operator-(complex<T> &p_sc, T &p_fr);
-    friend complex<T> operator*(complex<T> &p_fr, complex<T> &p_sc);
-    friend complex<T> operator*(T &p_fr, complex<T> &p_sc);
-    friend complex<T> operator*(complex<T> &p_sc, T &p_fr);
-    friend complex<T> operator/(complex<T> &p_fr, complex<T> &p_sc);
-    friend complex<T> operator/(T &p_fr, complex<T> &p_sc);
-    friend complex<T> operator/(complex<T> &p_sc, T &p_fr);
+    template<typename U> friend complex<U> operator+(complex<U> &p_fr, complex<U> &p_sc);
+    template<typename U> friend complex<U> operator+(U &p_fr, complex<U> &p_sc);
+    template<typename U> friend complex<U> operator+(complex<U> &p_sc, U &p_fr);
+    template<typename U> friend complex<U> operator-(complex<U> &p_fr, complex<U> &p_sc);
+    template<typename U> friend complex<U> operator-(U &p_fr, complex<U> &p_sc);
+    template<typename U> friend complex<U> operator-(complex<U> &p_sc, U &p_fr);
+    template<typename U> friend complex<U> operator*(complex<U> &p_fr, complex<U> &p_sc);
+    template<typename U> friend complex<U> operator*(U &p_fr, complex<U> &p_sc);
+    template<typename U> friend complex<U> operator*(complex<U> &p_sc, U &p_fr);
+    template<typename U> friend complex<U> operator/(complex<U> &p_fr, complex<U> &p_sc);
+    template<typename U> friend complex<U> operator/(U &p_fr, complex<U> &p_sc);
+    template<typename U> friend complex<U> operator/(complex<U> &p_sc, U &p_fr);
 
     complex<T> operator+() const {return *this;}
     complex<T> operator-() const {return complex<T>(-m_re, -m_im);}
@@ -115,11 +115,11 @@ public:
  *  @return - returns the square root of complex number
  */
 template<class T>
-inline complex<T> sqrt(std::unique_ptr<complex<T>> p_val)
+inline complex<T> sqrt(complex<T>& p_val)
 {
-    auto real = std::sqrt(p_val->mag()) * std::cos(p_val->arg()/2.);
-    auto imag = std::sqrt(p_val->mag()) * std::sin(p_val->arg()/2.);
-    return complex<T>(static_cast<T>(real), static_cast<T>(imag));
+    T real = std::sqrt(p_val.mag()) * std::cos(p_val.arg()/2.);
+    T imag = std::sqrt(p_val.mag()) * std::sin(p_val.arg()/2.);
+    return complex<T>(real, imag);
 }
 
 /**
@@ -131,9 +131,9 @@ inline complex<T> sqrt(std::unique_ptr<complex<T>> p_val)
  */
 template<class T>
 inline std::pair<complex<T>, complex<T>> quadr(
-        complex<T> p_a,
-        complex<T> p_b,
-        complex<T> p_c)
+        complex<T>& p_a,
+        complex<T>& p_b,
+        complex<T>& p_c)
 {
     complex<T> a2_var, ac4_var, sq_var;
     complex<T> fr_const(2., 0.);
