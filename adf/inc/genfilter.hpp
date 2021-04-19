@@ -64,8 +64,8 @@ private:
     std::unique_ptr<FiltParam<T>> m_fparam;
     FilterSelect m_sfilter;
     ApproxSelect m_sapprox;
-    int16_t m_order;
-    int16_t m_gain;
+    uint16_t m_order;
+    T m_gain;
     T CommonKernel();
     T FreqNorm();
     void FilterOrder();
