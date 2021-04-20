@@ -135,13 +135,27 @@ inline std::pair<complex<T>, complex<T>> quadr(
         complex<T>& p_b,
         complex<T>& p_c)
 {
-    complex<T> a2_var, ac4_var, sq_var;
+    complex<T> a2_var,
+               ac4_tmp, ac4_var,
+               sq1_tmp, sq2_tmp, sq_var,
+               fr_root, sc_root,
+               pb_tmp = p_b;
     complex<T> fr_const(2., 0.);
     complex<T> sc_const(4., 0.);
-    a2_var = fr_const * p_a;
-    ac4_var = sc_const * p_a * p_c;
-    sq_var = adf::sqrt(p_b * p_b - ac4_var);
-    return std::make_pair(((-p_b) + sq_var)/a2_var, ((-p_b) - sq_var)/a2_var);
+
+    a2_var = fr_const * p_a; /**< 2*a */
+
+    ac4_tmp = sc_const * p_a;
+    ac4_var = ac4_tmp * p_c; /**< 4*a*c */
+
+    sq1_tmp = p_b * p_b;
+    sq2_tmp = sq1_tmp - ac4_var;
+    sq_var = adf::sqrt(sq2_tmp); /**< sqrt(b*b - 4*a*c */
+
+    pb_tmp = -pb_tmp;
+    fr_root = pb_tmp + sq_var; /**< for first root */
+    sc_root = pb_tmp - sq_var; /**< for second root */
+    return std::make_pair(fr_root/a2_var, sc_root/a2_var);
 }
 
 #include "complex.cpp"
