@@ -474,7 +474,9 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
     /**<  */
     un_acoefs.reserve(size_coef);
     un_bcoefs.reserve(size_coef);
-    /**< If original order is odd convert first order factor to quadratic, pos_start indicate start point for loop */
+
+    /**< If original order is odd convert first order factor to quadratic,
+     *  pos_start indicate start point for loop */
     if(origin_order % 2)
     {
         m_gain *= (n_acoefs[2] / n_bcoefs[2]);
@@ -487,7 +489,7 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
         pos_start = 1;
     }
     else
-    { pos_start = 0;}
+    {pos_start = 0;}
     /**<  */
     for(std::size_t qd_count = pos_start; qd_count < origin_qd_count; qd_count++)
     {
@@ -576,9 +578,40 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
  * @brief
  */
 template<typename T>
-void CalcFilterCoefs<T>::BPCoefsUnnorm()
+void CalcFilterCoefs<T>::BPCoefsUnnorm(T un_bandwith, T un_centrfreq)
 {
+    T origin_qd_count,                                   /**< Original number of quads values */
+      origin_order;                                      /**< Original order */
+    int32_t origin_coef, new_coef, pos_start;            /**< Counters */
+    std::size_t size_coef;                               /**< Size vector value */
+    complex<T> A, B, C, D, E;                            /**< Temp complex value */
 
+    /**
+      Store the original number of the order,
+    */
+    origin_order = m_order;
+    origin_qd_count = (origin_order + 1) / 2;
+    m_order = origin_order * 2;
+    /**<  */
+    size_coef = 3*origin_order;
+    /**<  */
+    un_acoefs.reserve(size_coef);
+    un_bcoefs.reserve(size_coef);
+
+    /**< If original order is odd convert first order factor to quadratic,
+     *  pos_start indicate start point for loop */
+    if(origin_order % 2)
+    {
+        un_acoefs[0] = n_acoefs[1];
+        un_acoefs[1] = un_bandwith * n_acoefs[2];
+        un_acoefs[2] = n_acoefs[1] * un_centrfreq * un_centrfreq;
+        un_bcoefs[0] = n_bcoefs[1];
+        un_bcoefs[1] = un_bandwith * n_bcoefs[2];
+        un_bcoefs[2] = n_bcoefs[1] * un_centrfreq * un_centrfreq;;
+        pos_start = 1;
+    }
+    else
+    {pos_start = 0;}
 }
 
 /**
