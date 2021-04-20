@@ -518,10 +518,13 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
             E = complex<T>(first_comp_quad.second);
 
             /**< Make required substitutions, factorization again */
-            A = complex<T>(1, 0);
             complex<T> mul_tmp(un_bandwith, 0);
             complex<T> num_tmp(1, 0);
-            complex<T> result = (-(num_tmp/D))*(-mul_tmp);
+            complex<T> fr_tmp, result;
+            A = complex<T>(1, 0);
+            fr_tmp = num_tmp / D;
+            fr_tmp = -fr_tmp;
+            result = fr_tmp * mul_tmp;
             B = result;
             C = complex<T>(un_centrfreq * un_centrfreq, 0);
 
