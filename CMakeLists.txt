@@ -4,9 +4,9 @@ cmake_minimum_required(VERSION 3.5)
 # Project Name Version & main Languages
 ############################################################
 
-project(adf VERSION 0.0.1 LANGUAGES CXX)
+set(BIN adf)
+project(${BIN} VERSION 0.0.1 LANGUAGES CXX)
 include(GNUInstallDirs)
-include_directories(adf/inc adf/src)
 
 ############################################################
 # Create a library
@@ -22,17 +22,30 @@ add_library(adf STATIC
     adf/src/complex.cpp
     adf/src/genfilter.cpp
 )
+############################################################
+# Add directories
+############################################################
+target_include_directories(adf PRIVATE adf/inc)
+target_include_directories(adf PRIVATE adf/src)
 
+############################################################
+# Version
+############################################################
 set_target_properties(adf PROPERTIES VERSION ${PROJECT_VERSION})
-
 set_target_properties(adf PROPERTIES SOVERSION 1)
 
-set_target_properties(adf PROPERTIES PUBLIC_HEADER adf/inc/adfilter.hpp)
+############################################################
+# Public heders
+############################################################
+set(MYLIB_HEADERS adf/inc/adfilter.hpp)
+set_target_properties(adf PROPERTIES PUBLIC_HEADER ${MYLIB_HEADERS})
 
+############################################################
+# Public heders
+############################################################
 configure_file(adfilter.pc.in adfilter.pc @ONLY)
 
-target_include_directories(adf PRIVATE inc)
-target_include_directories(adf PRIVATE src)
+target_compile_features(adf PUBLIC cxx_std_17)
 
 # install and export the library
 
