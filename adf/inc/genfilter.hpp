@@ -90,7 +90,7 @@ protected:
     void IChebyApprox();
     void NormalCoefs();
     void BSCoefsUnnorm(T un_bandwith, T un_centrfreq);
-    void BPCoefsUnnorm();
+    void BPCoefsUnnorm(T un_bandwith, T un_centrfreq);
     void HPCoefsUnnorm(T freq);
     void LPCoefsUnnorm(T freq);
     void UnnormCoefs();
