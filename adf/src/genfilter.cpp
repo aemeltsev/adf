@@ -453,7 +453,6 @@ void CalcFilterCoefs<T>::NormalCoefs()
         break;
     default: return ADF_Error(BadFilter, "Error: Bad approximation value");
     }
-
 }
 
 /**
@@ -617,6 +616,86 @@ void CalcFilterCoefs<T>::BPCoefsUnnorm(T un_bandwith, T un_centrfreq)
     }
     else
     {pos_start = 0;}
+
+    for(std::size_t qd_count = pos_start; qd_count < origin_qd_count; qd_count++)
+    {
+        origin_coef = qd_count * 3;
+        new_coef = qd_count * 6 - pos_start * 3;
+
+        if(n_acoefs[origin_coef] == 0)
+        {
+            un_acoefs[new_coef] = 0.;
+            un_acoefs[new_coef+1] = std::sqrt(n_acoefs[origin_coef+2]) * un_bandwith;
+            un_acoefs[new_coef+2] = 0.;
+            un_acoefs[new_coef+3] = 0.;
+            un_acoefs[new_coef+4] = std::sqrt(n_acoefs[origin_coef+2]) * un_bandwith;
+            un_acoefs[new_coef+5] = 0.;
+        }
+
+        else
+        {
+            /**< Convert coefficients to complex, then factorization */
+            A = complex<T>(n_acoefs[origin_coef], 0);
+            B = complex<T>(n_acoefs[origin_coef+1], 0);
+            C = complex<T>(n_acoefs[origin_coef+2], 0);
+
+            std::pair<complex<T>, complex<T>> first_comp_quad = quadr(A, B, C);
+            D = complex<T>(first_comp_quad.first);
+            E = complex<T>(first_comp_quad.second);
+
+            /**< Make required substitutions, factorization again */
+            complex<T> mul_tmp(un_bandwith, 0);
+            complex<T> num_tmp(1, 0);
+            complex<T> fr_tmp, result;
+            A = complex<T>(1, 0);
+            fr_tmp = num_tmp / D;
+            fr_tmp = -fr_tmp;
+            result = fr_tmp * mul_tmp;
+            B = result;
+            C = complex<T>(un_centrfreq * un_centrfreq, 0);
+
+            std::pair<complex<T>, complex<T>> second_comp_quad = quadr(A, B, C);
+            D = complex<T>(second_comp_quad.first);
+            E = complex<T>(second_comp_quad.second);
+
+            un_acoefs[new_coef] = 1.;
+            un_acoefs[new_coef+1] = -2. * D.getReal();
+            complex<T> fc_real = D * D.conj();
+            un_acoefs[new_coef+2] = fc_real.getReal();
+            un_acoefs[new_coef+3] = 1.;
+            un_acoefs[new_coef+4] = -2. * E.getReal();
+            complex<T> sc_real = E * E.conj();
+            un_acoefs[new_coef+5] = sc_real.getReal();
+        }
+        /**<  */
+        A = complex<T>(n_bcoefs[origin_coef], 0);
+        B = complex<T>(n_bcoefs[origin_coef+1], 0);
+        C = complex<T>(n_bcoefs[origin_coef+2], 0);
+
+        std::pair<complex<T>, complex<T>> first_comp_quad = quadr(A, B, C);
+        D = complex<T>(first_comp_quad.first);
+        E = complex<T>(first_comp_quad.second);
+
+        /**< Make required substitutions, factorization again */
+        complex<T> mul_tmp(un_bandwith, 0);
+        complex<T> num_tmp(1, 0);
+        complex<T> fr_tmp, result;
+        A = complex<T>(1, 0);
+        fr_tmp = num_tmp / D;
+        fr_tmp = -fr_tmp;
+        result = fr_tmp * mul_tmp;
+        B = result;
+        C = complex<T>(un_centrfreq * un_centrfreq, 0);
+
+        un_bcoefs[new_coef] = 1.;
+        un_bcoefs[new_coef+1] = -2. * D.getReal();
+        complex<T> fc_real = D * D.conj();
+        un_bcoefs[new_coef+2] = fc_real.getReal();
+        un_bcoefs[new_coef+3] = 1.;
+        un_bcoefs[new_coef+4] = -2. * E.getReal();
+        complex<T> sc_real = E * E.conj();
+        un_bcoefs[new_coef+5] = sc_real.getReal();
+    }
 }
 
 /**
