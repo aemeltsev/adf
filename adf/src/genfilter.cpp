@@ -117,7 +117,7 @@ T CalcFilterCoefs<T>::FreqNorm()
         }
         ratio = (wp2 - wp1) / (ws2 - ws1);
         break;
-    default: return ADF_Error(BadFilter, "Error: Bad type of filter");;
+    default: return ADF_Error(BadFilter, "Error: Bad type of filter");
     }
     return ratio;
 }
@@ -132,7 +132,7 @@ T CalcFilterCoefs<T>::FreqNorm()
 template<typename T>
 void CalcFilterCoefs<T>::FilterOrder()
 {
-    T order;              /**< Return order value */
+    T order;                              /**< Return order value */
 
     T ratio_const, kernel_const,          /**< Temp values, */
       ei_ratio_const, eiq_ratio_const,    /**< for elliptic approximation */
@@ -275,8 +275,11 @@ void CalcFilterCoefs<T>::ChebyApprox()
 }
 
 /**
- * @brief 1. Calculate \f$( \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} )
- *        TODO
+ * @brief 1. Calculate \f$ \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} \f$
+ *        2. Check type filter for calculate the normalized cutoff frequency ratio
+ *        3. Calculate kernel ratio, and temp variables
+ *           \f$ v_0 = -\frac{j}{NK_1}sn^{-1} \bigg( \frac{j}{\varepsilon_p}, k_1 \bigg) \f$
+ *        4. TODO
  */
 template<typename T>
 void CalcFilterCoefs<T>::ElliptApprox()
@@ -292,8 +295,10 @@ void CalcFilterCoefs<T>::ElliptApprox()
       vo, fm,                           /**< Internal const */
       sigma, omega, zero;               /**< Pole and zero */
 
+    /**< The attenuation unevenness ratio in passband - \f$ \varepsilon \f$ */
     epsilon = std::sqrt(std::pow(10., -0,1*m_fparam->g_passband.first) - 1);
 
+    /**< Normalized cutoff frequency ratio */
     switch (m_sfilter)
     {
     case FilterSelect::LPF:
@@ -310,7 +315,7 @@ void CalcFilterCoefs<T>::ElliptApprox()
         ratio = (m_fparam->f_passband.second - m_fparam->f_passband.first) /
                 (m_fparam->f_stopband.second - m_fparam->f_stopband.first);
         break;
-    default: return /* error code */;
+    default: ADF_Error(BadFilter, "Error: Bad type of filter");
     }
 
     kernel = CommonKernel();
