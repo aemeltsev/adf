@@ -117,7 +117,7 @@ T CalcFilterCoefs<T>::FreqNorm()
             m_fparam->f_passband.second = wp1;
         }
         ratio = (wp2 - wp1) / (ws2 - ws1);
-        break;chore
+        break;
     default: return ADF_Error(BadFilter, "Error: Bad type of filter");
     }
     return ratio;
