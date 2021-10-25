@@ -5,9 +5,7 @@
 #define FDESIGN_H
 #include <cstdint>
 #include <cmath>
-#include "advmath.hpp"
-#include "complex.hpp"
-#include "base.hpp"
+#include "genfilter.hpp"
 
 namespace adf {
 
