@@ -129,7 +129,7 @@ inline void ellip_funcs(T p_eival, T p_eimod, T &sn, T &cn, T &dn)
  *              b_i = \sqrt{a_{i-1} + b_{i-1}},
  *              c_i = (a_{i-1} - b_{i-1})/2
  *            )
- *         Еhe cycle ends when \f$( a_N = b_N ) within some tolerance \f$( \varepsilon ).
+ *         The cycle ends when \f$( a_N = b_N ) within some tolerance \f$( \varepsilon ).
  *         And then the value of the integral will be equal to:
  *         \f$(
  *              E=\frac{\pi}{2a_N}
