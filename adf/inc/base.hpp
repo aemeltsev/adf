@@ -7,8 +7,8 @@
 namespace adf {
 
 /* constants */
-constexpr double ADF_PI(3.1415926535898);   /**< pi */
-constexpr double ADF_PI_2(6.2831853071796); /**< 2 * pi */
+constexpr double ADF_PI(3.14159265358979);   /**< pi */
+constexpr double ADF_PI_2(6.28318530717959); /**< 2 * pi */
 constexpr double ADF_IOTA(1.0E-3);          /**< small increment */
 constexpr double ADF_FREQ_MIN(1.0E-3);      /**< min freq */
 constexpr double ADF_FREQ_MAX(1.0E12);      /**< max freq */
