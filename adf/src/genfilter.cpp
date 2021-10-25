@@ -1,8 +1,8 @@
-#include "genfilter.hpp"
+#include "inc/genfilter.hpp"
 namespace adf {
 
 template<typename T>
-CalcFilterCoefs<T>::CalcFilterCoefs(std::unique_ptr<FiltParam<T>> fparam, FilterSelect &sfilter, ApproxSelect &sapprox) noexcept
+CalcFilterCoefs<T>::CalcFilterCoefs(FiltParam<int> fparam, FilterSelect &sfilter, ApproxSelect &sapprox) noexcept
     :m_sfilter(sfilter)
     ,m_sapprox(sapprox)
 {
@@ -78,10 +78,11 @@ T CalcFilterCoefs<T>::FreqNorm()
     T ratio,              /**< Return ratio value */
       wp1, wp2, ws1, ws2; /**< Edge frequency variables */
 
-    wp1 = m_fparam->f_passband.first;
-    wp2 = m_fparam->f_passband.second;
-    ws1 = m_fparam->f_stopband.first;
-    ws2 = m_fparam->f_stopband.second;
+    //wp1 = m_fparam->f_passband.first;
+    //wp2 = m_fparam->f_passband.second;
+    //ws1 = m_fparam->f_stopband.first;
+    //ws2 = m_fparam->f_stopband.second;
+    wp1 = m_fparam.freq_passband.first;
 
     switch(m_sfilter)
     {
@@ -116,7 +117,7 @@ T CalcFilterCoefs<T>::FreqNorm()
             m_fparam->f_passband.second = wp1;
         }
         ratio = (wp2 - wp1) / (ws2 - ws1);
-        break;
+        break;chore
     default: return ADF_Error(BadFilter, "Error: Bad type of filter");
     }
     return ratio;
@@ -189,6 +190,7 @@ void CalcFilterCoefs<T>::ButterApprox()
       theta, sigma, omega; /**< Real and image position in s-domain value \f$( s = \sigma + j\omega) */
 
     epsilon = std::sqrt(std::pow(10.0, -0,1*m_fparam->g_passband.first) - 1);
+    //Determine the Butterworth radius
     radius = std::pow(epsilon, -1.0/m_order);
 
     m_fparam->gain = 1.;
@@ -202,10 +204,12 @@ void CalcFilterCoefs<T>::ButterApprox()
         n_bcoefs[b++] = 1.;
         n_bcoefs[b++] = radius;
     }
-    /**< Other all quadratic terms */
+    /**< Other all quadratic terms,  */
     for(int32_t m=0; m<m_order/2; m++)
     {
-        /**< Calculate angle first, then real and imag pos */
+        /**< First determine the angle,
+         *  and then the position of the complex pole,
+         *  its real and imaginary values. */
         theta = ADF_PI*(2*m + m_order + 1) / (2*m_order);
         sigma = radius * std::cos(theta);
         omega = radius * std::sin(theta);

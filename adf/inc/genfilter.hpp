@@ -16,10 +16,10 @@ namespace adf {
  */
 enum class FilterSelect
 {
-    LPF,
-    HPF,
-    PBF,
-    SBF
+    LPF=1, //Low-pass filter
+    HPF,   //High-pass filter
+    PBF,   //Band-pass filter
+    SBF    //Band-stop filter
 };
 
 /**
@@ -27,10 +27,10 @@ enum class FilterSelect
  */
 enum class ApproxSelect
 {
-    BUTTER,
-    CHEBY,
-    ICHEBY,
-    ELLIPT
+    BUTTER=1, //Butterworth approximation
+    CHEBY,    //Chebyshev approximation
+    ICHEBY,   //Inverse Chebyshev approximation
+    ELLIPT    //elliptic approximation
 };
 
 /**
@@ -43,7 +43,7 @@ enum class ApproxSelect
  * @param gain - gain multiplier
  * @param order - order, length of filter
  */
-template<typename T=double>
+template<typename T=int>
 struct FiltParam
 {
   std::pair<T, T> gain_passband;
@@ -61,7 +61,7 @@ template<typename T=double>
 class CalcFilterCoefs
 {
 private:
-    std::unique_ptr<FiltParam<T>> m_fparam;
+    FiltParam<int> m_fparam;
     FilterSelect m_sfilter;
     ApproxSelect m_sapprox;
     uint16_t m_order;
@@ -96,10 +96,8 @@ protected:
     void UnnormCoefs();
 
 public:
-    explicit CalcFilterCoefs(std::unique_ptr<FiltParam<T>> fparam, FilterSelect &fselect, ApproxSelect &sapprox) noexcept;
+    explicit CalcFilterCoefs(FiltParam<int> fparam, FilterSelect &fselect, ApproxSelect &sapprox) noexcept;
     CalcFilterCoefs() noexcept;
 };
-
-#include "genfilter.cpp"
 }
 #endif //GENFILTER_H
