@@ -25,19 +25,17 @@ constexpr double ADF_ASYM_EVEN(4);          /**< type 4 FIR */
 constexpr long MAX_TERMS(100);
 constexpr double ERR_SMALL(1e-15);
 
-/* ERRORS */
-enum Error
+/* errors */
+std::string error(const std::string& err, const char* func, const char* file, int16_t line)
 {
-    StsOk = 0,
-    BadAlloc = -1,
-    StsNoMem = -2,
-    BadFilter = -3,
-    BadValue = -4
-};
+    std::string result = err;
+    result.append(1, ' ').append(func);
+    result.append(1, ' ').append(file);
+    result.append(1, ' ').append(std::to_string(line));
+    return result;
+}
 
-void error(int16_t code, const std::string& err, const char* func, const char* file, int16_t line);
-
-#define ADF_Error(code, msg) error(code, msg, __FUNCTION__, __FILE__, __LINE__)
+#define ADF_ERROR(msg) error(msg, __FUNCTION__, __FILE__, __LINE__)
 
 }
 
