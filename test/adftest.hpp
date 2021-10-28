@@ -9,6 +9,20 @@
 
 #include "adfilter.hpp"
 
+namespace adf_testing
+{
 
+class adfBttrwTst{
+
+    adf::FiltParam m_fparam;
+    adf::FilterSelect m_filter;
+    adf::ApproxSelect m_apprx;
+    adf::CalcFilterCoefs<> m_coefs;
+
+public:
+    adfBttrwTst();
+
+};
+}
 
 #endif //ADF_TESTS_H
