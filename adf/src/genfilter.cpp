@@ -192,38 +192,56 @@ void CalcFilterCoefs<T>::FilterOrder()
     m_order = std::ceil(+m_order);
 }
 
+template<typename T>
+bool CalcFilterCoefs<T>::FillZeroCoeffs(std::vector<T>& avec, std::vector<T>& bvec, std::size_t num)
+{
+    bool success = false;
+    if(num > 0 && num < MAX_TERMS)
+    {
+        success = true;
+        std::size_t number_coeffs = 3 * (num + 1) / 2;
+        avec.reserve(number_coeffs);
+        bvec.reserve(number_coeffs);
+
+        for(std::size_t ind=0; ind<number_coeffs; ++ind)
+        {
+            avec.push_back(0);
+            bvec.push_back(0);
+        }
+    }
+    return success;
+};
+
 /**
  * @brief TODO
  */
 template<typename T>
 void CalcFilterCoefs<T>::NormalCoefs()
 {
-    if(m_order <= 0 || m_order > 200)
+    if(FillZeroCoeffs(n_acoefs, n_bcoefs, m_order))
     {
-        throw std::range_error(ADF_ERROR("The value to out of range"));
+        switch (m_sapprox)
+        {
+        case ApproxType::BUTTER:
+            ButterApprox();
+            break;
+        case ApproxType::CHEBY:
+            ChebyApprox();
+            break;
+        case ApproxType::ELLIPT:
+            ElliptApprox();
+            break;
+        case ApproxType::ICHEBY:
+            IChebyApprox();
+            break;
+        default:
+            throw std::invalid_argument(ADF_ERROR("Use undefine approximation type"));
+            break;
+        }
     }
-
-    std::size_t number_coefs = 3 * (m_order + 1) / 2;
-    n_acoefs.reserve(number_coefs);
-    n_bcoefs.reserve(number_coefs);
-    //filling coefficients vectors to zeros?
-
-    switch (m_sapprox)
+    else
     {
-    case ApproxType::BUTTER:
-        ButterApprox();
-        break;
-    case ApproxType::CHEBY:
-        ChebyApprox();
-        break;
-    case ApproxType::ELLIPT:
-        ElliptApprox();
-        break;
-    case ApproxType::ICHEBY:
-        IChebyApprox();
-        break;
-    default:
-        throw std::invalid_argument(ADF_ERROR("Use undefine approximation type"));
+        throw std::range_error(ADF_ERROR("The order value to out of range"));
     }
 }
 
@@ -252,23 +270,16 @@ void CalcFilterCoefs<T>::ButterApprox()
     m_fparam.gain = 1.;
 
     //Counters
-    //int32_t a=0, b=0;
+    int32_t a=0, b=0;
 
     //Work with the odd order
     if(m_order % 2){
-        /**n_acoefs[a++] = 0.;
+        n_acoefs[a++] = 0.;
         n_acoefs[a++] = 0.;
         n_acoefs[a++] = radius;
         n_bcoefs[b++] = 0.;
         n_bcoefs[b++] = 1.;
-        n_bcoefs[b++] = radius;*/
-
-        n_acoefs.push_back(0.);
-        n_acoefs.push_back(0.);
-        n_acoefs.push_back(radius);
-        n_bcoefs.push_back(0.);
-        n_bcoefs.push_back(1.);
-        n_bcoefs.push_back(radius);
+        n_bcoefs[b++] = radius;
     }
     /**< Other all quadratic terms,  */
     for(std::size_t m=0; m<m_order/2; m++)
@@ -281,19 +292,12 @@ void CalcFilterCoefs<T>::ButterApprox()
         auto omega = radius * std::sin(theta);
 
         /**< Set the quadratic coefs */
-        /*n_acoefs[a++] = 0.;
+        n_acoefs[a++] = 0.;
         n_acoefs[a++] = 0.;
         n_acoefs[a++] = sigma*sigma + omega*omega;
         n_bcoefs[b++] = 1.;
         n_bcoefs[b++] = -2*sigma;
-        n_bcoefs[b++] = sigma*sigma + omega*omega;*/
-
-        n_acoefs.push_back(0.);
-        n_acoefs.push_back(0.);
-        n_acoefs.push_back(sigma*sigma + omega*omega);
-        n_bcoefs.push_back(1.);
-        n_bcoefs.push_back(-2*sigma);
-        n_bcoefs.push_back(sigma*sigma + omega*omega);
+        n_bcoefs[b++] = sigma*sigma + omega*omega;
     }
 }
 
@@ -509,6 +513,47 @@ void CalcFilterCoefs<T>::IChebyApprox()
 
         /**< Update the gain */
         m_fparam.gain *= (mag_inv / (zero * zero));
+    }
+}
+
+template<typename T>
+void CalcFilterCoefs<T>::UnnormCoefs()
+{
+    T freq, //
+      BW,   //
+      Wo;   //
+
+    if(m_sapprox == ApproxType::BUTTER || m_sapprox == ApproxType::CHEBY
+            || m_sapprox == ApproxType::ELLIPT)
+    {
+        freq = m_fparam.freq_passband.first;
+        Wo = std::sqrt(m_fparam.freq_passband.first * m_fparam.freq_passband.second);
+        BW = m_fparam.freq_passband.second - m_fparam.freq_passband.first;
+    }
+    else if(m_sapprox == ApproxType::ICHEBY)
+    {
+        freq = m_fparam.freq_stopband.first;
+        Wo = std::sqrt(m_fparam.freq_stopband.first * m_fparam.freq_stopband.second);
+        BW = m_fparam.freq_passband.second - m_fparam.freq_passband.first;
+    }
+
+    switch (m_sfilter)
+    {
+    case FilterType::LPF:
+        LPCoefsUnnorm(freq);
+        break;
+    case FilterType::HPF:
+        HPCoefsUnnorm(freq);
+        break;
+    case FilterType::PBF:
+        BPCoefsUnnorm(BW, Wo);
+        break;
+    case FilterType::SBF:
+        BSCoefsUnnorm(BW, Wo);
+        break;
+    default:
+        throw std::invalid_argument(ADF_ERROR("Use undefine approximation type"));
+        break;
     }
 }
 
@@ -766,29 +811,38 @@ void CalcFilterCoefs<T>::BPCoefsUnnorm(T un_bandwith, T un_centrfreq)
 template<typename T>
 void CalcFilterCoefs<T>::HPCoefsUnnorm(T freq)
 {
-    int32_t coef_numb, pos_start; /**< Number of coefficient, and position start */
-    /**< First order type, if odd, set start position */
-    if(m_order % 2){
-        m_fparam.gain *= (n_acoefs[2]/n_bcoefs[2]);
-        un_acoefs[2] = freq*n_acoefs[1]/n_acoefs[2];
-        un_acoefs[1] = 1.;
-        un_bcoefs[2] = freq/n_bcoefs[2];
-        pos_start = 1;
-    }
-    else{
-        pos_start = 0;
-    }
+    /**< Number of coefficient, and position start */
+    std::size_t coef_numb,
+            pos_start,
+            qd_count;
 
-    for(int32_t qd_count = pos_start; qd_count < (m_order+1)/2; qd_count++)
+    if(FillZeroCoeffs(un_acoefs, un_bcoefs, m_order))
     {
-        coef_numb = qd_count*3;
-        m_fparam.gain *= (n_acoefs[2]/n_bcoefs[2]);
-        un_acoefs[coef_numb+1] = n_acoefs[coef_numb+1] * (freq/n_acoefs[coef_numb+2]);
-        un_acoefs[coef_numb+2] = freq * freq * n_acoefs[coef_numb]/n_acoefs[coef_numb+2];
-        un_acoefs[coef_numb] = 1.;
-        un_bcoefs[coef_numb+1] = n_bcoefs[coef_numb+1] * (freq/n_bcoefs[coef_numb+2]);
-        un_bcoefs[coef_numb+2] = freq * freq * n_bcoefs[coef_numb]/n_bcoefs[coef_numb+2];
-        un_bcoefs[coef_numb] = 1.;
+        /**< First order type, if odd, set start position */
+        if(m_order % 2)
+        {
+            m_fparam.gain *= (n_acoefs[2]/n_bcoefs[2]);
+            un_acoefs[2] = freq*n_acoefs[1]/n_acoefs[2];
+            un_acoefs[1] = 1.;
+            un_bcoefs[2] = freq/n_bcoefs[2];
+            pos_start = 1;
+        }
+        else
+        {
+            pos_start = 0;
+        }
+
+        for(qd_count = pos_start; qd_count < (m_order+1)/2; qd_count++)
+        {
+            coef_numb = qd_count*3;
+            m_fparam.gain *= (n_acoefs[2]/n_bcoefs[2]);
+            un_acoefs[coef_numb+1] = n_acoefs[coef_numb+1] * (freq/n_acoefs[coef_numb+2]);
+            un_acoefs[coef_numb+2] = freq * freq * n_acoefs[coef_numb]/n_acoefs[coef_numb+2];
+            un_acoefs[coef_numb] = 1.;
+            un_bcoefs[coef_numb+1] = n_bcoefs[coef_numb+1] * (freq/n_bcoefs[coef_numb+2]);
+            un_bcoefs[coef_numb+2] = freq * freq * n_bcoefs[coef_numb]/n_bcoefs[coef_numb+2];
+            un_bcoefs[coef_numb] = 1.;
+        }
     }
 }
 
@@ -804,37 +858,39 @@ void CalcFilterCoefs<T>::HPCoefsUnnorm(T freq)
  *           ]\f
  *        The gain constant is unchanged.
  *        See ECE 6414: Continuous Time Filters(P. Allen)
- *
  */
 template<typename T>
 void CalcFilterCoefs<T>::LPCoefsUnnorm(T freq)
 {
-    int32_t nb_coef, qd_count,
+    std::size_t nb_coef,
+            qd_count,
             ps_start;
-    /**< First order type, if odd, set start position */
-    if(m_order % 2){
-        un_acoefs[2] = n_acoefs[2]*freq;
-        un_bcoefs[2] = n_bcoefs[2]*freq;
-        ps_start = 1;
-    }
-    else{
-        ps_start = 0;
-    }
 
-    for(qd_count=ps_start; qd_count < (m_order+1)/2; ps_start++)
+    if(FillZeroCoeffs(un_acoefs, un_bcoefs, m_order))
     {
-        nb_coef = qd_count*3;
-        un_acoefs[nb_coef+1] = n_acoefs[nb_coef+1]*freq;
-        un_acoefs[nb_coef+2] = n_acoefs[nb_coef+2]*(freq*freq);
-        un_bcoefs[nb_coef+1] = n_bcoefs[nb_coef+1]*freq;
-        un_bcoefs[nb_coef+2] = n_bcoefs[nb_coef+2]*freq;
+        /**< First order type, if odd, set start position */
+        if(m_order % 2)
+        {
+            un_acoefs[2] = n_acoefs[2]*freq;
+            un_bcoefs[2] = n_bcoefs[2]*freq;
+            ps_start = 1;
+        }
+        else
+        {
+            ps_start = 0;
+        }
+
+        for(qd_count=ps_start; qd_count < (m_order+1)/2; ps_start++)
+        {
+            nb_coef = qd_count*3;
+            un_acoefs[nb_coef+1] = n_acoefs[nb_coef+1]*freq;
+            un_acoefs[nb_coef+2] = n_acoefs[nb_coef+2]*(freq*freq);
+            un_bcoefs[nb_coef+1] = n_bcoefs[nb_coef+1]*freq;
+            un_bcoefs[nb_coef+2] = n_bcoefs[nb_coef+2]*freq;
+        }
     }
 }
 
-template<typename T>
-void CalcFilterCoefs<T>::UnnormCoefs()
-{
 
-}
 
 }

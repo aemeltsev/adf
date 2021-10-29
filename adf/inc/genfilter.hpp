@@ -72,6 +72,7 @@ private:
     T CommonKernel();
     T FreqNorm();
     void FilterOrder();
+    bool FillZeroCoeffs(std::vector<T>& avec, std::vector<T>& bvec, std::size_t num);
 
 protected:
     void NormalCoefs();
