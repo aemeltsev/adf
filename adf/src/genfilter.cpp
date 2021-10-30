@@ -457,7 +457,7 @@ void CalcFilterCoefs<T>::ElliptApprox()
 }
 
 /**
- * @btief TODO
+ * @brief
  */
 template<typename T>
 void CalcFilterCoefs<T>::IChebyApprox()
@@ -516,6 +516,9 @@ void CalcFilterCoefs<T>::IChebyApprox()
     }
 }
 
+/**
+ * @brief
+ */
 template<typename T>
 void CalcFilterCoefs<T>::UnnormCoefs()
 {
@@ -563,67 +566,104 @@ void CalcFilterCoefs<T>::UnnormCoefs()
 template<typename T>
 void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
 {
-    T origin_qd_count,                                   /**< Original number of quads values */
-      origin_order;                                      /**< Original order */
-    int32_t origin_coef, new_coef, pos_start;            /**< Counters */
+    std::size_t origin_qd_count,                         /**< Original number of quads values */
+                origin_order;                            /**< Original order */
+    std::size_t origin_coef, new_coef, pos_start;        /**< Counters */
     std::size_t size_coef;                               /**< Size vector value */
     complex<T> A, B, C, D, E;                            /**< Temp complex value */
 
     /**
       Store the original number of the order,
+      new order will be twice large to original
     */
     origin_order = m_order;
     origin_qd_count = (origin_order + 1) / 2;
     m_order = origin_order * 2;
     /**<  */
     size_coef = 3*origin_order;
-    /**<  */
-    un_acoefs.reserve(size_coef);
-    un_bcoefs.reserve(size_coef);
 
-    /**< If original order is odd convert first order factor to quadratic,
-     *  pos_start indicate start point for loop */
-    if(origin_order % 2)
+    if(FillZeroCoeffs(un_acoefs, un_bcoefs, size_coef))
     {
-        m_gain *= (n_acoefs[2] / n_bcoefs[2]);
-        un_acoefs[0] = 1.;
-        un_acoefs[1] = un_bandwith * n_acoefs[1] / n_acoefs[2];
-        un_acoefs[2] = un_centrfreq * un_centrfreq;
-        un_bcoefs[0] = 1.;
-        un_bcoefs[1] = un_bandwith * n_bcoefs[1] / n_bcoefs[2];
-        un_bcoefs[3] = un_centrfreq * un_centrfreq;
-        pos_start = 1;
-    }
-    else
-    {pos_start = 0;}
-    /**<  */
-    for(std::size_t qd_count = pos_start; qd_count < origin_qd_count; qd_count++)
-    {
-        origin_coef = qd_count * 3;
-        new_coef = qd_count * 6 - pos_start * 3;
-
-        m_gain *= (n_acoefs[origin_coef+2] / n_bcoefs[origin_coef+2]);
-
-        if(n_acoefs[origin_coef] == 0)
+        /**< If original order is odd convert first order factor to quadratic,
+        *  pos_start indicate start point for loop */
+        if(origin_order % 2)
         {
-            un_acoefs[new_coef] = 1.;
-            un_acoefs[new_coef+1] = 0.;
-            un_acoefs[new_coef+2] = un_centrfreq * un_centrfreq;
-            un_acoefs[new_coef+3] = 1.;
-            un_acoefs[new_coef+4] = 0.;
-            un_acoefs[new_coef+5] = un_centrfreq * un_centrfreq;
+            m_gain *= (n_acoefs[2] / n_bcoefs[2]);
+            un_acoefs[0] = 1.;
+            un_acoefs[1] = un_bandwith * n_acoefs[1] / n_acoefs[2];
+            un_acoefs[2] = un_centrfreq * un_centrfreq;
+            un_bcoefs[0] = 1.;
+            un_bcoefs[1] = un_bandwith * n_bcoefs[1] / n_bcoefs[2];
+            un_bcoefs[3] = un_centrfreq * un_centrfreq;
+            pos_start = 1;
         }
-        /**<  */
         else
         {
-            /**< Convert coefficients to complex, then factorization */
-            A = complex<T>(n_acoefs[origin_coef], 0);
-            B = complex<T>(n_acoefs[origin_coef+1], 0);
-            C = complex<T>(n_acoefs[origin_coef+2], 0);
+            pos_start = 0;
+        }
 
-            std::pair<complex<T>, complex<T>> first_comp_quad = quadr(A, B, C);
-            D = complex<T>(first_comp_quad.first);
-            E = complex<T>(first_comp_quad.second);
+        /**<  */
+        for(std::size_t qd_count = pos_start; qd_count < origin_qd_count; qd_count++)
+        {
+            origin_coef = qd_count * 3;
+            new_coef = qd_count * 6 - pos_start * 3;
+            m_gain *= (n_acoefs[origin_coef+2] / n_bcoefs[origin_coef+2]);
+
+            if(n_acoefs[origin_coef] == 0)
+            {
+                un_acoefs[new_coef] = 1.;
+                un_acoefs[new_coef+1] = 0.;
+                un_acoefs[new_coef+2] = un_centrfreq * un_centrfreq;
+                un_acoefs[new_coef+3] = 1.;
+                un_acoefs[new_coef+4] = 0.;
+                un_acoefs[new_coef+5] = un_centrfreq * un_centrfreq;
+            }
+            /**<  */
+            else
+            {
+                /**< Convert coefficients to complex, then factorization */
+                A = complex<T>(n_acoefs[origin_coef], 0);
+                B = complex<T>(n_acoefs[origin_coef+1], 0);
+                C = complex<T>(n_acoefs[origin_coef+2], 0);
+
+                auto first_comp_quad = quadr(A, B, C);
+                D = complex<T>(first_comp_quad.first);
+                E = complex<T>(first_comp_quad.second);
+
+                /**< Make required substitutions, factorization again */
+                complex<T> mul_tmp(un_bandwith, 0);
+                complex<T> num_tmp(1, 0);
+                complex<T> fr_tmp, result;
+                A = complex<T>(1, 0);
+                fr_tmp = num_tmp / D;
+                fr_tmp = -fr_tmp;
+                result = fr_tmp * mul_tmp;
+                B = result;
+                C = complex<T>(un_centrfreq * un_centrfreq, 0);
+
+                auto second_comp_quad = quadr(A, B, C);
+                D = complex<T>(second_comp_quad.first);
+                E = complex<T>(second_comp_quad.second);
+
+                /**< Determine final values for new coefficients */
+                un_acoefs[new_coef] = 1.;
+                un_acoefs[new_coef+1] = -2. * D.getReal();
+                complex<T> fc_real = D * D.conj();
+                un_acoefs[new_coef+2] = fc_real.getReal();
+                un_acoefs[new_coef+3] = 1.;
+                un_acoefs[new_coef+4] = -2. * E.getReal();
+                complex<T> sc_real = E * E.conj();
+                un_acoefs[new_coef+5] = sc_real.getReal();
+            }
+
+            /*<  */
+            A = complex<T>(n_bcoefs[origin_coef], 0);
+            B = complex<T>(n_bcoefs[origin_coef+1], 0);
+            C = complex<T>(n_bcoefs[origin_coef+2], 0);
+
+            auto first_comp_quad = quadr(A, B, C);
+            D = std::move(first_comp_quad.first);
+            E = std::move(first_comp_quad.second);
 
             /**< Make required substitutions, factorization again */
             complex<T> mul_tmp(un_bandwith, 0);
@@ -636,47 +676,15 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
             B = result;
             C = complex<T>(un_centrfreq * un_centrfreq, 0);
 
-            std::pair<complex<T>, complex<T>> second_comp_quad = quadr(A, B, C);
-            D = complex<T>(second_comp_quad.first);
-            E = complex<T>(second_comp_quad.second);
-
-            un_acoefs[new_coef] = 1.;
-            un_acoefs[new_coef+1] = -2. * D.getReal();
-            complex<T> fc_real = D * D.conj();
-            un_acoefs[new_coef+2] = fc_real.getReal();
-            un_acoefs[new_coef+3] = 1.;
-            un_acoefs[new_coef+4] = -2. * E.getReal();
-            complex<T> sc_real = E * E.conj();
-            un_acoefs[new_coef+5] = sc_real.getReal();
+            un_bcoefs[new_coef] = 1.;
+            un_bcoefs[new_coef+1] = -2. * D.getReal();
+            complex<T> fc_real = std::move(D * D.conj());
+            un_bcoefs[new_coef+2] = fc_real.getReal();
+            un_bcoefs[new_coef+3] = 1.;
+            un_bcoefs[new_coef+4] = -2. * E.getReal();
+            complex<T> sc_real = std::move(E * E.conj());
+            un_bcoefs[new_coef+5] = sc_real.getReal();
         }
-        /**<  */
-        A = complex<T>(n_bcoefs[origin_coef], 0);
-        B = complex<T>(n_bcoefs[origin_coef+1], 0);
-        C = complex<T>(n_bcoefs[origin_coef+2], 0);
-
-        std::pair<complex<T>, complex<T>> first_comp_quad = quadr(A, B, C);
-        D = complex<T>(first_comp_quad.first);
-        E = complex<T>(first_comp_quad.second);
-
-        /**< Make required substitutions, factorization again */
-        complex<T> mul_tmp(un_bandwith, 0);
-        complex<T> num_tmp(1, 0);
-        complex<T> fr_tmp, result;
-        A = complex<T>(1, 0);
-        fr_tmp = num_tmp / D;
-        fr_tmp = -fr_tmp;
-        result = fr_tmp * mul_tmp;
-        B = result;
-        C = complex<T>(un_centrfreq * un_centrfreq, 0);
-
-        un_bcoefs[new_coef] = 1.;
-        un_bcoefs[new_coef+1] = -2. * D.getReal();
-        complex<T> fc_real = D * D.conj();
-        un_bcoefs[new_coef+2] = fc_real.getReal();
-        un_bcoefs[new_coef+3] = 1.;
-        un_bcoefs[new_coef+4] = -2. * E.getReal();
-        complex<T> sc_real = E * E.conj();
-        un_bcoefs[new_coef+5] = sc_real.getReal();
     }
 }
 
@@ -686,64 +694,106 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
 template<typename T>
 void CalcFilterCoefs<T>::BPCoefsUnnorm(T un_bandwith, T un_centrfreq)
 {
-    T origin_qd_count,                                   /**< Original number of quads values */
-      origin_order;                                      /**< Original order */
-    int32_t origin_coef, new_coef, pos_start;            /**< Counters */
+    std::size_t origin_qd_count,                         /**< Original number of quads values */
+                origin_order;                            /**< Original order */
+    std::size_t origin_coef, new_coef, pos_start;        /**< Counters */
     std::size_t size_coef;                               /**< Size vector value */
     complex<T> A, B, C, D, E;                            /**< Temp complex value */
 
     /**
       Store the original number of the order,
+      new order will be twice large to original
     */
     origin_order = m_order;
     origin_qd_count = (origin_order + 1) / 2;
     m_order = origin_order * 2;
     /**<  */
     size_coef = 3*origin_order;
-    /**<  */
-    un_acoefs.reserve(size_coef);
-    un_bcoefs.reserve(size_coef);
 
-    /**< If original order is odd convert first order factor to quadratic,
-     *  pos_start indicate start point for loop */
-    if(origin_order % 2)
+    if(FillZeroCoeffs(un_acoefs, un_bcoefs, size_coef))
     {
-        un_acoefs[0] = n_acoefs[1];
-        un_acoefs[1] = un_bandwith * n_acoefs[2];
-        un_acoefs[2] = n_acoefs[1] * un_centrfreq * un_centrfreq;
-        un_bcoefs[0] = n_bcoefs[1];
-        un_bcoefs[1] = un_bandwith * n_bcoefs[2];
-        un_bcoefs[2] = n_bcoefs[1] * un_centrfreq * un_centrfreq;;
-        pos_start = 1;
-    }
-    else
-    {pos_start = 0;}
-
-    for(std::size_t qd_count = pos_start; qd_count < origin_qd_count; qd_count++)
-    {
-        origin_coef = qd_count * 3;
-        new_coef = qd_count * 6 - pos_start * 3;
-
-        if(n_acoefs[origin_coef] == 0)
+        /**< If original order is odd convert first order factor to quadratic,
+        * pos_start indicate start point for loop */
+        if(origin_order % 2)
         {
-            un_acoefs[new_coef] = 0.;
-            un_acoefs[new_coef+1] = std::sqrt(n_acoefs[origin_coef+2]) * un_bandwith;
-            un_acoefs[new_coef+2] = 0.;
-            un_acoefs[new_coef+3] = 0.;
-            un_acoefs[new_coef+4] = std::sqrt(n_acoefs[origin_coef+2]) * un_bandwith;
-            un_acoefs[new_coef+5] = 0.;
+            un_acoefs[0] = n_acoefs[1];
+            un_acoefs[1] = un_bandwith * n_acoefs[2];
+            un_acoefs[2] = n_acoefs[1] * un_centrfreq * un_centrfreq;
+            un_bcoefs[0] = n_bcoefs[1];
+            un_bcoefs[1] = un_bandwith * n_bcoefs[2];
+            un_bcoefs[2] = n_bcoefs[1] * un_centrfreq * un_centrfreq;
+            pos_start = 1;
         }
-
         else
         {
-            /**< Convert coefficients to complex, then factorization */
-            A = complex<T>(n_acoefs[origin_coef], 0);
-            B = complex<T>(n_acoefs[origin_coef+1], 0);
-            C = complex<T>(n_acoefs[origin_coef+2], 0);
+            pos_start = 0;
+        }
 
-            std::pair<complex<T>, complex<T>> first_comp_quad = quadr(A, B, C);
-            D = complex<T>(first_comp_quad.first);
-            E = complex<T>(first_comp_quad.second);
+        /**< */
+        for(std::size_t qd_count = pos_start; qd_count < origin_qd_count; qd_count++)
+        {
+            /**< origin_coef - for indexing original coefficients, every 3 per original coeffs from origin_qd_count
+             *
+             */
+
+            origin_coef = qd_count * 3;
+            new_coef = qd_count * 6 - pos_start * 3;
+
+            if(n_acoefs[origin_coef] == 0)
+            {
+                un_acoefs[new_coef] = 0.;
+                un_acoefs[new_coef+1] = std::sqrt(n_acoefs[origin_coef+2]) * un_bandwith;
+                un_acoefs[new_coef+2] = 0.;
+                un_acoefs[new_coef+3] = 0.;
+                un_acoefs[new_coef+4] = std::sqrt(n_acoefs[origin_coef+2]) * un_bandwith;
+                un_acoefs[new_coef+5] = 0.;
+            }
+            /**< */
+            else
+            {
+                /**< Convert coefficients to complex, then factorization */
+                A = complex<T>(n_acoefs[origin_coef], 0);
+                B = complex<T>(n_acoefs[origin_coef+1], 0);
+                C = complex<T>(n_acoefs[origin_coef+2], 0);
+
+                auto first_comp_quad = quadr(A, B, C);
+                D = complex<T>(first_comp_quad.first);
+                E = complex<T>(first_comp_quad.second);
+
+                /**< Make required substitutions, factorization again */
+                complex<T> mul_tmp(un_bandwith, 0);
+                complex<T> num_tmp(1, 0);
+                complex<T> fr_tmp, result;
+                A = complex<T>(1, 0);
+                fr_tmp = num_tmp / D;
+                fr_tmp = -fr_tmp;
+                result = fr_tmp * mul_tmp;
+                B = result;
+                C = complex<T>(un_centrfreq * un_centrfreq, 0);
+
+                auto second_comp_quad = quadr(A, B, C);
+                D = complex<T>(second_comp_quad.first);
+                E = complex<T>(second_comp_quad.second);
+
+                /**< Determine final values for new coefficients */
+                un_acoefs[new_coef] = 1.;
+                un_acoefs[new_coef+1] = -2. * D.getReal();
+                complex<T> fc_real = D * D.conj();
+                un_acoefs[new_coef+2] = fc_real.getReal();
+                un_acoefs[new_coef+3] = 1.;
+                un_acoefs[new_coef+4] = -2. * E.getReal();
+                complex<T> sc_real = E * E.conj();
+                un_acoefs[new_coef+5] = sc_real.getReal();
+            }
+
+            /**<  */
+            A = complex<T>(n_bcoefs[origin_coef], 0);
+            B = complex<T>(n_bcoefs[origin_coef+1], 0);
+            C = complex<T>(n_bcoefs[origin_coef+2], 0);
+
+            auto first_comp_quad = quadr(A, B, C);
+            D = std::move(first_comp_quad.first);
+            E = std::move(first_comp_quad.second);
 
             /**< Make required substitutions, factorization again */
             complex<T> mul_tmp(un_bandwith, 0);
@@ -756,47 +806,15 @@ void CalcFilterCoefs<T>::BPCoefsUnnorm(T un_bandwith, T un_centrfreq)
             B = result;
             C = complex<T>(un_centrfreq * un_centrfreq, 0);
 
-            std::pair<complex<T>, complex<T>> second_comp_quad = quadr(A, B, C);
-            D = complex<T>(second_comp_quad.first);
-            E = complex<T>(second_comp_quad.second);
-
-            un_acoefs[new_coef] = 1.;
-            un_acoefs[new_coef+1] = -2. * D.getReal();
-            complex<T> fc_real = D * D.conj();
-            un_acoefs[new_coef+2] = fc_real.getReal();
-            un_acoefs[new_coef+3] = 1.;
-            un_acoefs[new_coef+4] = -2. * E.getReal();
-            complex<T> sc_real = E * E.conj();
-            un_acoefs[new_coef+5] = sc_real.getReal();
+            un_bcoefs[new_coef] = 1.;
+            un_bcoefs[new_coef+1] = -2. * D.getReal();
+            complex<T> fc_real = std::move(D * D.conj());
+            un_bcoefs[new_coef+2] = fc_real.getReal();
+            un_bcoefs[new_coef+3] = 1.;
+            un_bcoefs[new_coef+4] = -2. * E.getReal();
+            complex<T> sc_real = std::move(E * E.conj());
+            un_bcoefs[new_coef+5] = sc_real.getReal();
         }
-        /**<  */
-        A = complex<T>(n_bcoefs[origin_coef], 0);
-        B = complex<T>(n_bcoefs[origin_coef+1], 0);
-        C = complex<T>(n_bcoefs[origin_coef+2], 0);
-
-        std::pair<complex<T>, complex<T>> first_comp_quad = quadr(A, B, C);
-        D = complex<T>(first_comp_quad.first);
-        E = complex<T>(first_comp_quad.second);
-
-        /**< Make required substitutions, factorization again */
-        complex<T> mul_tmp(un_bandwith, 0);
-        complex<T> num_tmp(1, 0);
-        complex<T> fr_tmp, result;
-        A = complex<T>(1, 0);
-        fr_tmp = num_tmp / D;
-        fr_tmp = -fr_tmp;
-        result = fr_tmp * mul_tmp;
-        B = result;
-        C = complex<T>(un_centrfreq * un_centrfreq, 0);
-
-        un_bcoefs[new_coef] = 1.;
-        un_bcoefs[new_coef+1] = -2. * D.getReal();
-        complex<T> fc_real = D * D.conj();
-        un_bcoefs[new_coef+2] = fc_real.getReal();
-        un_bcoefs[new_coef+3] = 1.;
-        un_bcoefs[new_coef+4] = -2. * E.getReal();
-        complex<T> sc_real = E * E.conj();
-        un_bcoefs[new_coef+5] = sc_real.getReal();
     }
 }
 
@@ -890,7 +908,4 @@ void CalcFilterCoefs<T>::LPCoefsUnnorm(T freq)
         }
     }
 }
-
-
-
 }
