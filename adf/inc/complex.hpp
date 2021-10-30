@@ -15,14 +15,14 @@ template<class T>
 class complex
 {
     /**
-     * @brief Working variable for saving re, im
+     * @brief Working variable for store re, im
      */
     T m_re, m_im;
 
 public:
     //ctors
     complex() noexcept {m_re=m_im=0;}
-    complex(T re, T im=0)
+    explicit complex(T re, T im=0) noexcept
         :m_re(re)
         ,m_im(im)
     {}
@@ -41,7 +41,7 @@ public:
         return *this;
     }
     //move ctor
-    complex(const complex&& other) noexcept
+    explicit complex(const complex&& other) noexcept
         :m_re(std::move(other.m_re))
         ,m_im(std::move(other.m_im))
     {}
@@ -158,6 +158,5 @@ inline std::pair<complex<T>, complex<T>> quadr(
     return std::make_pair(fr_root/a2_var, sc_root/a2_var);
 }
 
-#include "complex.cpp"
 }
 #endif // COMPLEX_H
