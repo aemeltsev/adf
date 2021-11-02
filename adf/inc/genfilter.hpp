@@ -69,12 +69,12 @@ private:
     std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
     std::vector<T> un_acoefs, un_bcoefs; /**< to unnormalise coefs */
 
+protected:
     T CommonKernel();
     T FreqNorm();
     void FilterOrder();
     bool FillZeroCoeffs(std::vector<T>& avec, std::vector<T>& bvec, std::size_t num);
 
-protected:
     void NormalCoefs();
     void ButterApprox();
     void ChebyApprox();
@@ -87,11 +87,9 @@ protected:
     void HPCoefsUnnorm(T freq);
     void LPCoefsUnnorm(T freq);
 
-
-
 public:
-    explicit CalcFilterCoefs(FiltParam<T> &fparam, FilterType &fselect, ApproxType &sapprox);
-    CalcFilterCoefs();
+    explicit CalcFilterCoefs(const FiltParam<T> &fparam, const FilterType &fselect, const ApproxType &sapprox) noexcept;
+    CalcFilterCoefs() noexcept;
 
     void setFiltParam(
             std::pair<T, T> &g_passband, /**< The pasband gain ripple */
@@ -99,22 +97,84 @@ public:
             std::pair<T, T> &f_passband,
             std::pair<T, T> &f_stopband,
             T fsamp,
-            T gain
-            /*,int16_t order*/);
+            T gain);
 
-    void setTypeFilter(FilterType& sfilter);
-    void setApproxFilter(ApproxType& sapprox);
-    std::size_t getFilterOrder(){return m_order;};
-    ApproxType getApproxType();
-    FilterType getFilterType();
-    std::vector<T> normACoefs();
-    std::vector<T> normBCoefs();
-    std::vector<T> unnormACoefs();
-    std::vector<T> unnormBCoefs();
+    void setTypeFilter(const FilterType& sfilter)
+    {
+        m_sfilter = sfilter;
+    }
+
+    void setApproxFilter(const ApproxType& sapprox)
+    {
+        m_sapprox = sapprox;
+    }
+
+    // Only for test using ----------------------------------------------------------
+    void makeFilterOrder(){FilterOrder();}
+    void makeNormalCoefs(){NormalCoefs();}
+    void makeUnnormalCoefs(){UnnormCoefs();}
+
+    std::size_t getFilterOrder() const
+    {
+        return m_order;
+    }
+
+    ApproxType getApproxType()
+    {
+        return m_sapprox;
+    }
+
+    FilterType getFilterType()
+    {
+        return m_sfilter;
+    }
+
+    std::vector<T> normACoefs()
+    {
+        return n_acoefs;
+    }
+
+    std::size_t normACoefsSize()
+    {
+        return n_acoefs.size();
+    }
+
+    std::vector<T> normBCoefs()
+    {
+        return n_bcoefs;
+    }
+
+    std::size_t normBCoefsSize()
+    {
+        return n_bcoefs.size();
+    }
+
+    std::vector<T> unnormACoefs()
+    {
+        return un_acoefs;
+    }
+
+    std::size_t unnormACoefsSize()
+    {
+        return un_acoefs.size();
+    }
+
+    std::vector<T> unnormBCoefs()
+    {
+        return un_bcoefs;
+    }
+
+    std::size_t unnormBCoefsSize()
+    {
+        return un_bcoefs.size();
+    }
 };
 
+/**
+ * @brief
+ */
 template<typename T>
-CalcFilterCoefs<T>::CalcFilterCoefs(FiltParam<T> &fparam, FilterType &sfilter, ApproxType &sapprox)
+CalcFilterCoefs<T>::CalcFilterCoefs(const FiltParam<T> &fparam, const FilterType &sfilter, const ApproxType &sapprox) noexcept
     :m_sfilter(sfilter)
     ,m_sapprox(sapprox)
 {
@@ -126,13 +186,19 @@ CalcFilterCoefs<T>::CalcFilterCoefs(FiltParam<T> &fparam, FilterType &sfilter, A
     m_fparam.gain = std::move(fparam.gain);
 }
 
+/**
+ * @brief
+ */
 template<typename T>
-CalcFilterCoefs<T>::CalcFilterCoefs()
+CalcFilterCoefs<T>::CalcFilterCoefs() noexcept
 {
     m_order = 1;
     m_gain = 1;
 }
 
+/**
+ * @brief
+ */
 template<typename T>
 void CalcFilterCoefs<T>::setFiltParam(
         std::pair<T, T>& g_passband,
@@ -149,19 +215,6 @@ void CalcFilterCoefs<T>::setFiltParam(
     m_fparam.freq_stopband = std::move(f_stopband);
     m_fparam.fsamp = fsamp;
     m_fparam.gain = gain;
-    /*m_fparam->order = std::move(order)*/;
-}
-
-template<typename T>
-void CalcFilterCoefs<T>::setTypeFilter(FilterType &sfilter)
-{
-    m_sfilter = sfilter;
-}
-
-template<typename T>
-void CalcFilterCoefs<T>::setApproxFilter(ApproxType &sapprox)
-{
-    m_sapprox = sapprox;
 }
 
 /**
@@ -299,7 +352,7 @@ void CalcFilterCoefs<T>::FilterOrder()
         m_order = 0;
         throw std::range_error(ADF_ERROR("The filter order very large size"));
     }
-    m_order = std::ceil(+m_order);
+    m_order = std::ceil(++m_order);
 }
 
 /**
