@@ -5,9 +5,7 @@ set(
         inc/base.hpp
         inc/adfilter.hpp
         inc/genfilter.hpp
-        src/adfilter.cpp
         src/complex.cpp
-        src/genfilter.cpp
     )
 
 #Declare library
