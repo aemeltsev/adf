@@ -92,12 +92,12 @@ public:
     CalcFilterCoefs() noexcept;
 
     void setFiltParam(
-            std::pair<T, T> &g_passband, /**< The pasband gain ripple */
-            std::pair<T, T> &g_stopband, /**< The stopband gain ripple */
-            std::pair<T, T> &f_passband,
-            std::pair<T, T> &f_stopband,
-            T fsamp,
-            T gain);
+            const std::pair<T, T> &g_passband, /**< The pasband gain ripple */
+            const std::pair<T, T> &g_stopband, /**< The stopband gain ripple */
+            const std::pair<T, T> &f_passband,
+            const std::pair<T, T> &f_stopband,
+            const T fsamp,
+            const T gain);
 
     void setTypeFilter(const FilterType& sfilter)
     {
@@ -201,12 +201,12 @@ CalcFilterCoefs<T>::CalcFilterCoefs() noexcept
  */
 template<typename T>
 void CalcFilterCoefs<T>::setFiltParam(
-        std::pair<T, T>& g_passband,
-        std::pair<T, T>& g_stopband,
-        std::pair<T, T>& f_passband,
-        std::pair<T, T>& f_stopband,
-        T fsamp,
-        T gain)
+        const std::pair<T, T> &g_passband,
+        const std::pair<T, T> &g_stopband,
+        const std::pair<T, T> &f_passband,
+        const std::pair<T, T> &f_stopband,
+        const T fsamp,
+        const T gain)
 {
 
     m_fparam.gain_passband = std::move(g_passband);
@@ -248,10 +248,10 @@ T CalcFilterCoefs<T>::FreqNorm()
     T ratio;
 
     /**< Edge frequency variables */
-    auto&& wp1 = m_fparam.freq_passband.first;
-    auto&& wp2 = m_fparam.freq_passband.second;
-    auto&& ws1 = m_fparam.freq_stopband.first;
-    auto&& ws2 = m_fparam.freq_stopband.second;
+    auto&& wp1 = m_fparam.freq_passband.first; /**<pb freq lower */
+    auto&& wp2 = m_fparam.freq_passband.second; /**<pb freq upper */
+    auto&& ws1 = m_fparam.freq_stopband.first; /**<sb freq lower */
+    auto&& ws2 = m_fparam.freq_stopband.second; /**<sb freq upper */
 
     switch(m_sfilter)
     {
@@ -265,12 +265,12 @@ T CalcFilterCoefs<T>::FreqNorm()
         if(ws1 > (wp1 * wp2) / ws2)
         {
             ws2 = (wp1 * wp2) / ws1;
-            m_fparam.freq_stopband.first = ws2;
+            m_fparam.freq_stopband.second = ws2;
         }
         else
         {
             ws1 = (wp1 * wp2) / ws2;
-            m_fparam.freq_stopband.second = ws1;
+            m_fparam.freq_stopband.first = ws1;
         }
         ratio = (ws2 - ws1) / (wp2 - wp1);
         break;
@@ -278,12 +278,12 @@ T CalcFilterCoefs<T>::FreqNorm()
         if(wp1 > (ws1 * ws2) / wp2)
         {
             wp2 = (ws1 * ws2) / wp1;
-            m_fparam.freq_passband.first = wp2;
+            m_fparam.freq_passband.second = wp2;
         }
         else
         {
             wp1 = (ws1 * ws2) / wp2;
-            m_fparam.freq_passband.second = wp1;
+            m_fparam.freq_passband.first = wp1;
         }
         ratio = (wp2 - wp1) / (ws2 - ws1);
         break;
