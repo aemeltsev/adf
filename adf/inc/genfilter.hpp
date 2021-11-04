@@ -34,7 +34,12 @@ enum class ApproxType
 };
 
 /**
- * @brief Container for input filter params, used double type by default
+ * @brief Input specification for filter parameters,
+ *        these include the passband and stopband edge frequency
+ *        (in freq_passband first value - frequency lower, second value - frequency upper,
+ *        in freq_stopband the first value - frequency lower, the second value - frequency upper)
+ *        and gains(in gain_passband and gain_stopband values)
+ *        used double type by default
  * @param gain_passband
  * @param gain_stopband
  * @param freq_passband
@@ -64,7 +69,7 @@ private:
     FiltParam<T> m_fparam;
     FilterType m_sfilter;
     ApproxType m_sapprox;
-    std::size_t m_order = 0;
+    T m_order = 0.0;
     std::size_t m_gain = 0;
     std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
     std::vector<T> un_acoefs, un_bcoefs; /**< to unnormalise coefs */
@@ -88,16 +93,49 @@ protected:
     void LPCoefsUnnorm(T freq);
 
 public:
-    explicit CalcFilterCoefs(const FiltParam<T> &fparam, const FilterType &fselect, const ApproxType &sapprox) noexcept;
-    CalcFilterCoefs() noexcept;
+    explicit CalcFilterCoefs(const FiltParam<T> &fparam, const FilterType &fselect, const ApproxType &sapprox) noexcept
+        :m_sfilter(fselect)
+        ,m_sapprox(sapprox)
+    {
+        m_fparam.gain_passband = std::move(fparam.gain_passband);
+        m_fparam.gain_stopband = std::move(fparam.gain_stopband);
+        m_fparam.freq_passband = std::move(fparam.freq_passband);
+        m_fparam.freq_stopband = std::move(fparam.freq_stopband);
+        m_fparam.fsamp = std::move(fparam.fsamp);
+        m_fparam.gain = std::move(fparam.gain);
+    }
 
+    CalcFilterCoefs() noexcept
+    {
+        m_order = 1;
+        m_gain = 1;
+    }
+
+    /**
+     * @brief setFiltParam Filling data fields of the
+     * @param g_passband - the passband gain ripple
+     * @param g_stopband - the stopband gain ripple
+     * @param f_passband - the passband edge frequency
+     * @param f_stopband - the stopband edge frequency
+     * @param fsamp - sample frequency
+     * @param gain - gain miltiplier
+     */
     void setFiltParam(
-            const std::pair<T, T> &g_passband, /**< The pasband gain ripple */
-            const std::pair<T, T> &g_stopband, /**< The stopband gain ripple */
+            const std::pair<T, T> &g_passband,
+            const std::pair<T, T> &g_stopband,
             const std::pair<T, T> &f_passband,
             const std::pair<T, T> &f_stopband,
             const T fsamp,
-            const T gain);
+            const T gain)
+    {
+
+        m_fparam.gain_passband = std::move(g_passband);
+        m_fparam.gain_stopband = std::move(g_stopband);
+        m_fparam.freq_passband = std::move(f_passband);
+        m_fparam.freq_stopband = std::move(f_stopband);
+        m_fparam.fsamp = fsamp;
+        m_fparam.gain = gain;
+    }
 
     void setTypeFilter(const FilterType& sfilter)
     {
@@ -169,53 +207,6 @@ public:
         return un_bcoefs.size();
     }
 };
-
-/**
- * @brief
- */
-template<typename T>
-CalcFilterCoefs<T>::CalcFilterCoefs(const FiltParam<T> &fparam, const FilterType &sfilter, const ApproxType &sapprox) noexcept
-    :m_sfilter(sfilter)
-    ,m_sapprox(sapprox)
-{
-    m_fparam.gain_passband = std::move(fparam.gain_passband);
-    m_fparam.gain_stopband = std::move(fparam.gain_stopband);
-    m_fparam.freq_passband = std::move(fparam.freq_passband);
-    m_fparam.freq_stopband = std::move(fparam.freq_stopband);
-    m_fparam.fsamp = std::move(fparam.fsamp);
-    m_fparam.gain = std::move(fparam.gain);
-}
-
-/**
- * @brief
- */
-template<typename T>
-CalcFilterCoefs<T>::CalcFilterCoefs() noexcept
-{
-    m_order = 1;
-    m_gain = 1;
-}
-
-/**
- * @brief
- */
-template<typename T>
-void CalcFilterCoefs<T>::setFiltParam(
-        const std::pair<T, T> &g_passband,
-        const std::pair<T, T> &g_stopband,
-        const std::pair<T, T> &f_passband,
-        const std::pair<T, T> &f_stopband,
-        const T fsamp,
-        const T gain)
-{
-
-    m_fparam.gain_passband = std::move(g_passband);
-    m_fparam.gain_stopband = std::move(g_stopband);
-    m_fparam.freq_passband = std::move(f_passband);
-    m_fparam.freq_stopband = std::move(f_stopband);
-    m_fparam.fsamp = fsamp;
-    m_fparam.gain = gain;
-}
 
 /**
  * @brief This the common value for all filter approximation methods
@@ -352,7 +343,7 @@ void CalcFilterCoefs<T>::FilterOrder()
         m_order = 0;
         throw std::range_error(ADF_ERROR("The filter order very large size"));
     }
-    m_order = std::ceil(++m_order);
+    m_order = std::ceil(m_order);
 }
 
 /**
