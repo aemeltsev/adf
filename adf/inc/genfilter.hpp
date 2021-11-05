@@ -69,7 +69,7 @@ private:
     FiltParam<T> m_fparam;
     FilterType m_sfilter;
     ApproxType m_sapprox;
-    T m_order = 0.0;
+    std::size_t m_order = 0;
     std::size_t m_gain = 0;
     std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
     std::vector<T> un_acoefs, un_bcoefs; /**< to unnormalise coefs */
@@ -297,10 +297,10 @@ T CalcFilterCoefs<T>::FreqNorm()
 template<typename T>
 void CalcFilterCoefs<T>::FilterOrder()
 {
-
     T ratio_const, kernel_const,          /**< Temp values, */
       ei_ratio_const, eiq_ratio_const,    /**< for elliptic approximation */
-      ei_kernel_const, eiq_kernel_const;
+      ei_kernel_const, eiq_kernel_const,
+      order=0.;
 
     auto kernel = CommonKernel();
     auto ratio = FreqNorm();
@@ -308,18 +308,18 @@ void CalcFilterCoefs<T>::FilterOrder()
     switch(m_sapprox)
     {
     case ApproxType::BUTTER:
-        m_order = std::log10(kernel)/(2 * std::log10(ratio));
+        order = std::log10(kernel)/(2 * std::log10(ratio));
         break;
     case ApproxType::CHEBY:
     case ApproxType::ICHEBY:
-        m_order = acosh(std::sqrt(kernel))/acosh(ratio);
+        order = acosh(std::sqrt(kernel))/acosh(ratio);
         break;
     case ApproxType::ELLIPT:
         ratio_const = 1/ratio;
 
         if((ratio_const > .9999)||(ratio_const < 2e-8))
         {
-            m_order = 0;
+            m_order = static_cast<std::size_t>(order);
             throw std::range_error(ADF_ERROR("The value to out of range"));
         }
 
@@ -329,25 +329,24 @@ void CalcFilterCoefs<T>::FilterOrder()
         eiq_ratio_const = ellip_integral(std::sqrt(1-(ratio_const*ratio_const)));
         ei_kernel_const = ellip_integral(kernel_const);
         eiq_kernel_const = ellip_integral(std::sqrt(1-(kernel_const*kernel_const)));
-        m_order = (ei_ratio_const * eiq_kernel_const)/(eiq_ratio_const * ei_kernel_const);
-
-        break;
-    default:
-        m_order = 0;
-        throw std::invalid_argument(ADF_ERROR("Use undefine approximation type"));
+        order = (ei_ratio_const * eiq_kernel_const)/(eiq_ratio_const * ei_kernel_const);
         break;
     }
 
-    if(m_order > 200)
+    if(order > 200.)
     {
-        m_order = 0;
+        m_order = static_cast<std::size_t>(order);
         throw std::range_error(ADF_ERROR("The filter order very large size"));
     }
-    m_order = std::ceil(m_order);
+    m_order = static_cast<std::size_t>(std::ceil(order));
 }
 
 /**
- * @brief TODO
+ * @brief FillZeroCoeffs - Filling normalized vectors with default values
+ * @param avec input reference to vector of "a" coefficients for filling
+ * @param bvec input reference to vector of "b" coefficients for filling
+ * @param num the order
+ * @return bool variable, success if order value not out of range
  */
 template<typename T>
 bool CalcFilterCoefs<T>::FillZeroCoeffs(std::vector<T>& avec, std::vector<T>& bvec, std::size_t num)
@@ -356,7 +355,7 @@ bool CalcFilterCoefs<T>::FillZeroCoeffs(std::vector<T>& avec, std::vector<T>& bv
     if(num > 0 && num < MAX_TERMS)
     {
         success = true;
-        std::size_t number_coeffs = 3 * (num + 1) / 2;
+        std::size_t number_coeffs = (3 * (num + 1)) / 2;
         avec.reserve(number_coeffs);
         bvec.reserve(number_coeffs);
 
@@ -370,7 +369,7 @@ bool CalcFilterCoefs<T>::FillZeroCoeffs(std::vector<T>& avec, std::vector<T>& bv
 };
 
 /**
- * @brief TODO
+ * @brief NormalCoefs - Calculation and filling the vectors of coefficients depending on the approximation method
  */
 template<typename T>
 void CalcFilterCoefs<T>::NormalCoefs()
@@ -391,9 +390,6 @@ void CalcFilterCoefs<T>::NormalCoefs()
         case ApproxType::ICHEBY:
             IChebyApprox();
             break;
-        default:
-            throw std::invalid_argument(ADF_ERROR("Use undefine approximation type"));
-            break;
         }
     }
     else
@@ -403,16 +399,16 @@ void CalcFilterCoefs<T>::NormalCoefs()
 }
 
 /**
- * @brief 1. Calculate \f$ \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} \f$
- *        2. Calculate radius: \f$ R = \varepsilon^{-1/n} \f$
+ * @brief 1. Calculate \f$( \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} )\f$
+ *        2. Calculate radius: \f$( R = \varepsilon^{-1/n} )\f$
  *        3. In for cycle calculate stable function left-half-plane poles used:
- *           \f$[
+ *           \f$(
  *                s_k=\omega_c\bigg[ -\sin\frac{(2K + 1)\pi}{2n} + j\cos\frac{(2K + 1)\pi}{2n} \bigg],~~~K=0,1,\cdots ,n-1
- *              ]\f$
+ *              )\f$
  *            and angle:
- *            \f$[
+ *            \f$(
  *                 \phi = \frac{\pi}{n} \times \frac{(2k+n+1)}{2}
- *               ]\f$
+ *               )\f$
  */
 template<typename T>
 void CalcFilterCoefs<T>::ButterApprox()
@@ -459,16 +455,16 @@ void CalcFilterCoefs<T>::ButterApprox()
 }
 
 /**
- * @brief 1. Calculate \f$( \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} )
- *        2. Calculate radius(d): \f$( D = \frac{\sinh^{-1}(\varepsilon^{-1})}{n} )
+ * @brief 1. Calculate \f$( \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} )\f$
+ *        2. Calculate radius(d): \f$( D = \frac{\sinh^{-1}(\varepsilon^{-1})}{n} )\f$
  *        3. Calculate angle:
  *           \f$(
  *                \phi = \frac{\pi}{n} \times \frac{(2k+1)}{2}
- *              )
+ *              )\f$
  *            And poles in the left half of the plane are given by
  *            \f$(
  *                 p_k = -\sinh(D)\sin(\phi_k)+j\cosh(D)\cos(\phi_k)~~~k = 1, 2, 3, \cdots, n
- *               )
+ *               )\f$
  */
 template<typename T>
 void CalcFilterCoefs<T>::ChebyApprox()
@@ -533,7 +529,7 @@ void CalcFilterCoefs<T>::ElliptApprox()
     // The attenuation unevenness ratio in passband - \f$ \varepsilon \f$ (Ripple factor)
     auto epsilon = std::sqrt(std::pow(10., -0.1*m_fparam.gain_passband.first) - 1);
 
-    // Normalized cutoff frequency ratio
+    // Normalized cutoff fre\f$quency ratio
     switch (m_sfilter)
     {
     case FilterType::LPF:
@@ -556,16 +552,18 @@ void CalcFilterCoefs<T>::ElliptApprox()
         break;
     }
 
+    /* Dimopoulos H.G.-Analog Electronic Filters.Theory, Design and Synthesis.
+     *  pp. 180. Specifications and the Order of the Elliptic Approximation */
     auto kernel = CommonKernel();
     auto ratio_const = 1/ratio;
     auto kernel_const = 1/std::sqrt(kernel);
 
     //The complete elliptic integrals of the modules ratio and kernel
-    auto ei_ratio_const = ellip_integral(ratio_const);
-    auto ei_kernel_const = ellip_integral(kernel_const);
+    auto ei_ratio_const = ellip_integral(ratio_const); //K(k)
+    auto ei_kernel_const = ellip_integral(kernel_const); //K(g)
 
     //Variable vo used in the calculation of the pole and zero locations
-    auto vo = (ei_ratio_const / (ei_kernel_const * m_order)) * arcsc(1/epsilon, kernel_const);
+    auto vo = (ei_ratio_const / (ei_kernel_const * m_order)) * arcsc(1/epsilon, kernel_const); //N(d)
     ellip_funcs(vo, std::sqrt(1-(ratio_const*ratio_const)), sp, cp, dp);
 
     // Counters
@@ -614,7 +612,10 @@ void CalcFilterCoefs<T>::ElliptApprox()
 }
 
 /**
- * @brief
+ * @brief IChebyApprox - Type II Chebyshev filter also inverse Chebyshev filter
+ *        See details Dimopoulos H.G.-Analog Electronic Filters.Theory, Design and Synthesis.
+ *        pp. 110
+ *        The Inverse Chebyshev Approximation
  */
 template<typename T>
 void CalcFilterCoefs<T>::IChebyApprox()
@@ -683,8 +684,9 @@ void CalcFilterCoefs<T>::UnnormCoefs()
       BW,   /* For transformation to bandstop or bandpass type */
       Wo;
 
-    if(m_sapprox == ApproxType::BUTTER || m_sapprox == ApproxType::CHEBY
-            || m_sapprox == ApproxType::ELLIPT)
+    if(m_sapprox == ApproxType::BUTTER
+       || m_sapprox == ApproxType::CHEBY
+       || m_sapprox == ApproxType::ELLIPT)
     {
         freq = m_fparam.freq_passband.first;
         Wo = std::sqrt(m_fparam.freq_passband.first * m_fparam.freq_passband.second);
@@ -710,9 +712,6 @@ void CalcFilterCoefs<T>::UnnormCoefs()
         break;
     case FilterType::SBF:
         BSCoefsUnnorm(BW, Wo);
-        break;
-    default:
-        throw std::invalid_argument(ADF_ERROR("Use undefine approximation type"));
         break;
     }
 }
@@ -1043,7 +1042,7 @@ void CalcFilterCoefs<T>::LPCoefsUnnorm(T freq)
 
     if(FillZeroCoeffs(un_acoefs, un_bcoefs, m_order))
     {
-        /**< First order type, if odd, set start position */
+        /**< First check order type, if odd, set start position to 1 else to 0 */
         if(m_order % 2)
         {
             un_acoefs[2] = n_acoefs[2]*freq;
@@ -1068,15 +1067,11 @@ void CalcFilterCoefs<T>::LPCoefsUnnorm(T freq)
 
 template<typename T=double>
 class CalcAnalogCoefs: public CalcFilterCoefs<T>
-{
-
-};
+{};
 
 template<typename T=double>
 class CalcDigIIRCoefs: public CalcFilterCoefs<T>
-{
-
-};
+{};
 
 }
 #endif //GENFILTER_H
