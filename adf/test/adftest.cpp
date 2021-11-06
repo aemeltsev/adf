@@ -67,7 +67,7 @@ TEST(BttrwTstSuite, BLPApprx)
     auto m_ftype = adf::FilterType::LPF;
     auto m_apprx = adf::ApproxType::BUTTER;
     tstFilterConf(m_ftype, m_fparam);
-    auto m_coefs = new adf::CalcFilterCoefs<double>(m_fparam, m_ftype, m_apprx);
+    auto m_coefs = new adf::CalcCoeffs<double>(m_fparam, m_ftype, m_apprx);
 
     //Act
     m_coefs->makeFilterOrder();
@@ -88,7 +88,7 @@ TEST(CHebyTstSuite, CHHPApprx)
     auto m_ftype = adf::FilterType::HPF;
     auto m_apprx = adf::ApproxType::CHEBY;
     tstFilterConf(m_ftype, m_fparam);
-    auto m_coefs = new adf::CalcFilterCoefs<double>(m_fparam, m_ftype, m_apprx);
+    auto m_coefs = new adf::CalcCoeffs<double>(m_fparam, m_ftype, m_apprx);
 
     //Act
     m_coefs->makeFilterOrder();
@@ -109,7 +109,7 @@ TEST(ICHebyTstSuite, ICHBPApprx)
     auto m_ftype = adf::FilterType::PBF;
     auto m_apprx = adf::ApproxType::ICHEBY;
     tstFilterConf(m_ftype, m_fparam);
-    auto m_coefs = new adf::CalcFilterCoefs<double>(m_fparam, m_ftype, m_apprx);
+    auto m_coefs = new adf::CalcCoeffs<double>(m_fparam, m_ftype, m_apprx);
 
     //Act
     m_coefs->makeFilterOrder();
@@ -130,7 +130,7 @@ TEST(ElliptTstSuite, ELLBSApprx)
     auto ftype = adf::FilterType::SBF;
     auto fapprx = adf::ApproxType::ELLIPT;
     tstFilterConf(ftype, fparam);
-    auto m_coefs = new adf::CalcFilterCoefs<double>(fparam, ftype, fapprx);
+    auto m_coefs = new adf::CalcCoeffs<double>(fparam, ftype, fapprx);
 
     //Act
     m_coefs->makeFilterOrder();
@@ -160,7 +160,7 @@ TEST(BttrwCoeffFill, BNcoeffSize)
     fparam.gain_stopband.first = -21.0;
     fparam.gain_stopband.second = 0.0;
 
-    auto fcoefs = new adf::CalcFilterCoefs<>(fparam, ftype, fapprx);
+    auto fcoefs = new adf::CalcCoeffs<>(fparam, ftype, fapprx);
 
     //Act
     fcoefs->makeFilterOrder();
@@ -188,7 +188,7 @@ TEST(BttrwCoeffFill, BNcoeffCheck)
     auto fapprx = adf::ApproxType::BUTTER;
     adf::FiltParam<> fparam;
     tstFilterConf(ftype, fparam);
-    auto fcoefs = new adf::CalcFilterCoefs<>(fparam, ftype, fapprx);
+    auto fcoefs = new adf::CalcCoeffs<>(fparam, ftype, fapprx);
 
     //Act
     fcoefs->makeFilterOrder();
@@ -205,4 +205,15 @@ TEST(BttrwCoeffFill, BNcoeffCheck)
     ASSERT_EQ(fcoefs->normACoefsSize(), cfsize);
     delete fcoefs;
 }
+
+TEST(EllUnCoeff, EllUnCoeffSize)
+{
+
+}
+
+TEST(EllUnCoeff, EllUnCoeffCheck)
+{
+
+}
+
 #endif //ADF_TESTS_H
