@@ -25,6 +25,8 @@ constexpr double ADF_ASYM_EVEN(4);          /**< type 4 FIR */
 constexpr long MAX_TERMS(100);
 constexpr double ERR_SMALL(1e-15);
 
+constexpr double ADF_RAD2DEG(180.0/ADF_PI);
+
 /* errors */
 std::string error(const std::string& err, const char* func, const char* file, int16_t line)
 {
