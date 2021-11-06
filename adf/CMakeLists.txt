@@ -5,6 +5,8 @@ set(
         inc/base.hpp
         inc/adfilter.hpp
         inc/genfilter.hpp
+        inc/anfilter.hpp
+        inc/iirfilter.hpp
         src/complex.cpp
     )
 
