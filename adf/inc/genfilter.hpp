@@ -63,7 +63,7 @@ struct FiltParam
  * @brief
  */
 template<typename T=double>
-class CalcFilterCoefs
+class CalcCoeffs
 {
 private:
     FiltParam<T> m_fparam;
@@ -72,7 +72,7 @@ private:
     std::size_t m_order = 0;
     std::size_t m_gain = 0;
     std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
-    std::vector<T> un_acoefs, un_bcoefs; /**< to unnormalise coefs */
+    std::vector<T> un_acoefs, un_bcoefs; /**< to unnormalise coefs */ 
 
 protected:
     T CommonKernel();
@@ -93,7 +93,7 @@ protected:
     void LPCoefsUnnorm(T freq);
 
 public:
-    explicit CalcFilterCoefs(const FiltParam<T> &fparam, const FilterType &fselect, const ApproxType &sapprox) noexcept
+    explicit CalcCoeffs(const FiltParam<T> &fparam, const FilterType &fselect, const ApproxType &sapprox) noexcept
         :m_sfilter(fselect)
         ,m_sapprox(sapprox)
     {
@@ -105,7 +105,7 @@ public:
         m_fparam.gain = std::move(fparam.gain);
     }
 
-    CalcFilterCoefs() noexcept
+    CalcCoeffs() noexcept
     {
         m_order = 1;
         m_gain = 1;
@@ -216,7 +216,7 @@ public:
  * @return Ratio value of the suppression \f$(R_s)dB/\f$(R_p)dB\f$
  */
 template<typename T>
-T CalcFilterCoefs<T>::CommonKernel()
+T CalcCoeffs<T>::CommonKernel()
 {
     if(m_fparam.gain_stopband.first <=ADF_GAIN_STOP || m_fparam.gain_passband.first >= ADF_GAIN_PASS)
     {
@@ -233,7 +233,7 @@ T CalcFilterCoefs<T>::CommonKernel()
  * @return Ratio value of the normalization by frequency
  */
 template <typename T>
-T CalcFilterCoefs<T>::FreqNorm()
+T CalcCoeffs<T>::FreqNorm()
 {
     /**< Return ratio value */
     T ratio;
@@ -295,7 +295,7 @@ T CalcFilterCoefs<T>::FreqNorm()
  * @return Order of the polynom value
  */
 template<typename T>
-void CalcFilterCoefs<T>::FilterOrder()
+void CalcCoeffs<T>::FilterOrder()
 {
     T ratio_const, kernel_const,          /**< Temp values, */
       ei_ratio_const, eiq_ratio_const,    /**< for elliptic approximation */
@@ -349,7 +349,7 @@ void CalcFilterCoefs<T>::FilterOrder()
  * @return bool variable, success if order value not out of range
  */
 template<typename T>
-bool CalcFilterCoefs<T>::FillZeroCoeffs(std::vector<T>& avec, std::vector<T>& bvec, std::size_t num)
+bool CalcCoeffs<T>::FillZeroCoeffs(std::vector<T>& avec, std::vector<T>& bvec, std::size_t num)
 {
     bool success = false;
     if(num > 0 && num < MAX_TERMS)
@@ -372,7 +372,7 @@ bool CalcFilterCoefs<T>::FillZeroCoeffs(std::vector<T>& avec, std::vector<T>& bv
  * @brief NormalCoefs - Calculation and filling the vectors of coefficients depending on the approximation method
  */
 template<typename T>
-void CalcFilterCoefs<T>::NormalCoefs()
+void CalcCoeffs<T>::NormalCoefs()
 {
     if(FillZeroCoeffs(n_acoefs, n_bcoefs, m_order))
     {
@@ -411,7 +411,7 @@ void CalcFilterCoefs<T>::NormalCoefs()
  *               )\f$
  */
 template<typename T>
-void CalcFilterCoefs<T>::ButterApprox()
+void CalcCoeffs<T>::ButterApprox()
 {
     //Determine ripple factor
     auto epsilon = std::sqrt(std::pow(10.0, -0.1*m_fparam.gain_passband.first) - 1);
@@ -467,7 +467,7 @@ void CalcFilterCoefs<T>::ButterApprox()
  *               )\f$
  */
 template<typename T>
-void CalcFilterCoefs<T>::ChebyApprox()
+void CalcCoeffs<T>::ChebyApprox()
 {
     //Determine ripple factor
     auto epsilon = std::sqrt(std::pow(10.0, -0.1*m_fparam.gain_passband.first) - 1);
@@ -520,7 +520,7 @@ void CalcFilterCoefs<T>::ChebyApprox()
  *        4. TODO
  */
 template<typename T>
-void CalcFilterCoefs<T>::ElliptApprox()
+void CalcCoeffs<T>::ElliptApprox()
 {
       T ratio,                            /**< Check type filter frequency value */
       sp, cp, dp,                       /**< Sn cn dn Jacobi elliptic functions */
@@ -618,7 +618,7 @@ void CalcFilterCoefs<T>::ElliptApprox()
  *        The Inverse Chebyshev Approximation
  */
 template<typename T>
-void CalcFilterCoefs<T>::IChebyApprox()
+void CalcCoeffs<T>::IChebyApprox()
 {
     T  mag_inv,            /**< Using for inverse magnitude value */
       phi, sigma, omega,  /**< Real and image position in s-domain value \f$( s = \sigma + j\omega) */
@@ -678,7 +678,7 @@ void CalcFilterCoefs<T>::IChebyApprox()
  * @brief
  */
 template<typename T>
-void CalcFilterCoefs<T>::UnnormCoefs()
+void CalcCoeffs<T>::UnnormCoefs()
 {
     T freq, // Stored value for unnormaliztion frequency
       BW,   /* For transformation to bandstop or bandpass type */
@@ -720,7 +720,7 @@ void CalcFilterCoefs<T>::UnnormCoefs()
  * @brief
  */
 template<typename T>
-void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
+void CalcCoeffs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
 {
     std::size_t origin_qd_count,                         /**< Original number of quads values */
                 origin_order;                            /**< Original order */
@@ -848,7 +848,7 @@ void CalcFilterCoefs<T>::BSCoefsUnnorm(T un_bandwith, T un_centrfreq)
  * @brief
  */
 template<typename T>
-void CalcFilterCoefs<T>::BPCoefsUnnorm(T un_bandwith, T un_centrfreq)
+void CalcCoeffs<T>::BPCoefsUnnorm(T un_bandwith, T un_centrfreq)
 {
     std::size_t origin_qd_count,                         /**< Original number of quads values */
                 origin_order;                            /**< Original order */
@@ -983,7 +983,7 @@ void CalcFilterCoefs<T>::BPCoefsUnnorm(T un_bandwith, T un_centrfreq)
  *        The gain constant multiplied by \f$(A_2/B_2)\f$
  */
 template<typename T>
-void CalcFilterCoefs<T>::HPCoefsUnnorm(T freq)
+void CalcCoeffs<T>::HPCoefsUnnorm(T freq)
 {
     /**< Number of coefficient, and position start */
     std::size_t coef_numb,
@@ -1034,7 +1034,7 @@ void CalcFilterCoefs<T>::HPCoefsUnnorm(T freq)
  *        See ECE 6414: Continuous Time Filters(P. Allen)
  */
 template<typename T>
-void CalcFilterCoefs<T>::LPCoefsUnnorm(T freq)
+void CalcCoeffs<T>::LPCoefsUnnorm(T freq)
 {
     std::size_t nb_coef,
             qd_count,
@@ -1065,13 +1065,6 @@ void CalcFilterCoefs<T>::LPCoefsUnnorm(T freq)
     }
 }
 
-template<typename T=double>
-class CalcAnalogCoefs: public CalcFilterCoefs<T>
-{};
 
-template<typename T=double>
-class CalcDigIIRCoefs: public CalcFilterCoefs<T>
-{};
-
-}
+} //adf
 #endif //GENFILTER_H
