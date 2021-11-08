@@ -5,9 +5,6 @@
 #define ADVMATH_H
 #include <cstdint>
 #include <cmath>
-#include <limits>
-#include <cfloat>
-#include <vector>
 #include <array>
 
 #include "base.hpp"
