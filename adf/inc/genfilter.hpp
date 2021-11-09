@@ -120,17 +120,6 @@ public:
     {
         return m_order;
     }
-
-    ApproxType getApproxType()
-    {
-        return m_sapprox;
-    }
-
-    FilterType getFilterType()
-    {
-        return m_sfilter;
-    }
-
 };
 
 /**
@@ -218,7 +207,7 @@ T CalcCoeffs<T>::FreqNorm()
  * @brief The order of the polynomial for the approximation,
  *        as defined in the filter specification, which is the order of the filter.
  *        As example Butterworth:
- *        \f[ n \geq \frac{\log(\frac{\varepsilon_s^2}{\varepsilon_p^2})}{2\log(\frac{\omega_s}{\omega_p})} ]\f
+ *        \f( n \geq \frac{\log(\frac{\varepsilon_s^2}{\varepsilon_p^2})}{2\log(\frac{\omega_s}{\omega_p})} )\f
  * @return Order of the polynom value
  */
 template<typename T>
@@ -884,7 +873,6 @@ void CalcCoeffs<T>::LPCoefsUnnorm(std::vector<T> &n_acoefs,
     //FIXME un_acoefs.resize() un_bcoefs.resize()
 
     /**< First check order type, if odd, set start position to 1 else to 0 */
-
     if(m_order % 2)
     {
         un_acoefs[2] = n_acoefs[2]*freq;
