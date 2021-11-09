@@ -8,7 +8,7 @@
 #include <cmath>
 #include <gtest/gtest.h>
 
-#include "inc/adfilter.hpp"
+#include "inc/anfilter.hpp"
 
 void tstFilterConf(const adf::FilterType& m_ftype, adf::FiltParam<double>& m_fparam)
 {
@@ -67,14 +67,14 @@ TEST(BttrwTstSuite, BLPApprx)
     auto m_ftype = adf::FilterType::LPF;
     auto m_apprx = adf::ApproxType::BUTTER;
     tstFilterConf(m_ftype, m_fparam);
-    auto m_coefs = new adf::CalcCoeffs<double>(m_fparam, m_ftype, m_apprx);
+    auto m_coefs = new adf::AnalogFilter<double>(m_fparam, m_ftype, m_apprx);
 
     //Act
-    m_coefs->makeFilterOrder();
+    m_coefs->setOrder();
 
     //Assert
     ASSERT_EQ(m_coefs->getFilterType(), m_ftype);
-    ASSERT_EQ(m_coefs->getApproxType(), m_apprx);
+    ASSERT_EQ(m_coefs->getApproximationType(), m_apprx);
     ASSERT_EQ(m_coefs->getFilterOrder(), order);
     delete m_coefs;
 }
@@ -88,14 +88,14 @@ TEST(CHebyTstSuite, CHHPApprx)
     auto m_ftype = adf::FilterType::HPF;
     auto m_apprx = adf::ApproxType::CHEBY;
     tstFilterConf(m_ftype, m_fparam);
-    auto m_coefs = new adf::CalcCoeffs<double>(m_fparam, m_ftype, m_apprx);
+    auto m_coefs = new adf::AnalogFilter<double>(m_fparam, m_ftype, m_apprx);
 
     //Act
-    m_coefs->makeFilterOrder();
+    m_coefs->setOrder();
 
     //Assert
     ASSERT_EQ(m_coefs->getFilterType(), m_ftype);
-    ASSERT_EQ(m_coefs->getApproxType(), m_apprx);
+    ASSERT_EQ(m_coefs->getApproximationType(), m_apprx);
     ASSERT_EQ(m_coefs->getFilterOrder(), order);
     delete m_coefs;
 }
@@ -109,14 +109,14 @@ TEST(ICHebyTstSuite, ICHBPApprx)
     auto m_ftype = adf::FilterType::PBF;
     auto m_apprx = adf::ApproxType::ICHEBY;
     tstFilterConf(m_ftype, m_fparam);
-    auto m_coefs = new adf::CalcCoeffs<double>(m_fparam, m_ftype, m_apprx);
+    auto m_coefs = new adf::AnalogFilter<double>(m_fparam, m_ftype, m_apprx);
 
     //Act
-    m_coefs->makeFilterOrder();
+    m_coefs->setOrder();
 
     //Assert
     ASSERT_EQ(m_coefs->getFilterType(), m_ftype);
-    ASSERT_EQ(m_coefs->getApproxType(), m_apprx);
+    ASSERT_EQ(m_coefs->getApproximationType(), m_apprx);
     ASSERT_EQ(m_coefs->getFilterOrder(), order);
     delete m_coefs;
 }
@@ -130,14 +130,14 @@ TEST(ElliptTstSuite, ELLBSApprx)
     auto ftype = adf::FilterType::SBF;
     auto fapprx = adf::ApproxType::ELLIPT;
     tstFilterConf(ftype, fparam);
-    auto m_coefs = new adf::CalcCoeffs<double>(fparam, ftype, fapprx);
+    auto m_coefs = new adf::AnalogFilter<double>(fparam, ftype, fapprx);
 
     //Act
-    m_coefs->makeFilterOrder();
+    m_coefs->setOrder();
 
     //Assert
     ASSERT_EQ(m_coefs->getFilterType(), ftype);
-    ASSERT_EQ(m_coefs->getApproxType(), fapprx);
+    ASSERT_EQ(m_coefs->getApproximationType(), fapprx);
     ASSERT_EQ(m_coefs->getFilterOrder(), order);
     delete m_coefs;
 }
@@ -160,17 +160,20 @@ TEST(BttrwCoeffFill, BNcoeffSize)
     fparam.gain_stopband.first = -21.0;
     fparam.gain_stopband.second = 0.0;
 
-    auto fcoefs = new adf::CalcCoeffs<>(fparam, ftype, fapprx);
+    auto afilter = new adf::AnalogFilter<>(fparam, ftype, fapprx);
 
     //Act
-    fcoefs->makeFilterOrder();
-    fcoefs->makeNormalCoefs();
+    afilter->setOrder();
+    afilter->NormalizeCoefficients();
+    auto&& ncoeffs = afilter->getNormalizeCoefficients();
 
     //Assert
-    ASSERT_EQ(fcoefs->getFilterOrder(), order);
-    ASSERT_TRUE(fcoefs->normACoefsSize() != 0);
-    ASSERT_EQ(fcoefs->normACoefsSize(), cfsize);
-    delete fcoefs;
+    ASSERT_EQ(afilter->getFilterOrder(), order);
+    ASSERT_TRUE(ncoeffs.first.size() != 0);
+    ASSERT_TRUE(ncoeffs.second.size() != 0);
+    ASSERT_EQ(ncoeffs.first.size(), cfsize);
+    ASSERT_EQ(ncoeffs.second.size(), cfsize);
+    delete afilter;
 }
 
 TEST(BttrwCoeffFill, BNcoeffCheck)
@@ -180,30 +183,33 @@ TEST(BttrwCoeffFill, BNcoeffCheck)
     std::vector<double> avec{0.0, 0.0, 1.23412,
                              0.0, 0.0, 1.52305,
                              0.0, 0.0, 1.52305};
-    std::vector<double> bvec{0.0, 1.000, 1.234,
-                             1.000, 1.997, 1.523,
-                             1.000, 0.7627, 1.523};
+    std::vector<double> bvec{0.0, 1.00000, 1.23412,
+                             1.00000, 0.76273, 1.52305,
+                             1.00000, 1.9968, 1.52305};
 
     auto ftype = adf::FilterType::LPF;
     auto fapprx = adf::ApproxType::BUTTER;
     adf::FiltParam<> fparam;
     tstFilterConf(ftype, fparam);
-    auto fcoefs = new adf::CalcCoeffs<>(fparam, ftype, fapprx);
+    auto afilter = new adf::AnalogFilter<>(fparam, ftype, fapprx);
 
     //Act
-    fcoefs->makeFilterOrder();
-    fcoefs->makeNormalCoefs();
-    auto acoef = fcoefs->normACoefs();
+    afilter->setOrder();
+    afilter->NormalizeCoefficients();
+    auto&& ncoeffs = afilter->getNormalizeCoefficients();
 
     //Assert
+    ASSERT_EQ(afilter->getFilterOrder(), order);
+    ASSERT_TRUE(ncoeffs.first.size() > 0);
+    ASSERT_TRUE(ncoeffs.second.size() > 0);
+    ASSERT_EQ(ncoeffs.first.size(), cfsize);
+    ASSERT_EQ(ncoeffs.second.size(), cfsize);
     for(auto i=0; i<cfsize; ++i)
     {
-        ASSERT_EQ(std::round(acoef[i]*10000)/10000, std::round(avec[i]*10000)/10000);
+        ASSERT_EQ(std::round(ncoeffs.first[i]*10000)/10000, std::round(avec[i]*10000)/10000);
+        ASSERT_EQ(std::round(ncoeffs.second[i]*10000)/10000, std::round(bvec[i]*10000)/10000);
     }
-    ASSERT_EQ(fcoefs->getFilterOrder(), order);
-    ASSERT_TRUE(fcoefs->normACoefsSize() > 0);
-    ASSERT_EQ(fcoefs->normACoefsSize(), cfsize);
-    delete fcoefs;
+    delete afilter;
 }
 
 TEST(EllUnCoeff, EllUnCoeffSize)
