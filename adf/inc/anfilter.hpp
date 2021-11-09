@@ -5,20 +5,23 @@
 
 namespace adf {
 
+/**
+ * @class AnalogFilter
+ */
 template<typename T=double>
 class AnalogFilter
 {
     CalcCoeffs<T>* m_calccoeffs;
     FiltParam<T> m_fparam;
     FilterType m_ftype;
-    ApproxType m_type;
+    ApproxType m_atype;
     std::size_t m_order = 0;
     std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
     std::vector<T> un_acoefs, un_bcoefs; /**< to unnormalise coefs */
 
 
     /**
-     * @brief setFiltParam Filling data fields of the
+     * @brief setFilterParam Filling data fields of the
      * @param g_passband - the passband gain ripple
      * @param g_stopband - the stopband gain ripple
      * @param f_passband - the passband edge frequency
@@ -26,21 +29,15 @@ class AnalogFilter
      * @param fsamp - sample frequency
      * @param gain - gain miltiplier
      */
-    void setFiltParam(FiltParam<T>& other)
+    void setFilterParam(FiltParam<T>& other)
     {
 
-        m_fparam.gain_passband = std::move(other.g_passband);
-        m_fparam.gain_stopband = std::move(other.g_stopband);
-        m_fparam.freq_passband = std::move(other.f_passband);
-        m_fparam.freq_stopband = std::move(other.f_stopband);
+        m_fparam.gain_passband = std::move(other.gain_passband);
+        m_fparam.gain_stopband = std::move(other.gain_stopband);
+        m_fparam.freq_passband = std::move(other.freq_passband);
+        m_fparam.freq_stopband = std::move(other.freq_stopband);
         m_fparam.fsamp = other.fsamp;
         m_fparam.gain = other.gain;
-    }
-
-    void setOrder()
-    {
-        m_calccoeffs->FilterOrder();
-        m_order = m_calccoeffs->getFilterOrder();
     }
 
     /**
@@ -71,12 +68,12 @@ class AnalogFilter
     }
 
 public:
-    explicit AnalogFilter<T>(FiltParam<T>& fparam, FilterType& ftype, ApproxType& type)
+    explicit AnalogFilter<T>(FiltParam<T>& fparam, FilterType& ftype, ApproxType& atype)
         :m_ftype(ftype)
-        ,m_type(type)
+        ,m_atype(atype)
     {
-        setFiltParam(fparam);
-        m_calccoeffs = new CalcCoeffs<T>(fparam, ftype, type);
+        setFilterParam(fparam);
+        m_calccoeffs = new CalcCoeffs<T>(fparam, ftype, atype);
     }
 
     ~AnalogFilter<T>()
@@ -84,17 +81,20 @@ public:
         delete m_calccoeffs;
     }
 
+    void setOrder()
+    {
+        m_calccoeffs->FilterOrder();
+        m_order = m_calccoeffs->getFilterOrder();
+    }
 
     /**
-     * @brief NormalCoefs - Calculation and filling the vectors of coefficients depending on the approximation method
+     * @brief NormalizeCoefficients - Calculation and filling the vectors of coefficients depending on the approximation method
      */
-    void NormalCoefs()
+    void NormalizeCoefficients()
     {
-        setOrder();
-
         if(FillZeroCoeffs(n_acoefs, n_bcoefs, m_order))
         {
-            switch (m_type)
+            switch (m_atype)
             {
             case ApproxType::BUTTER:
                 m_calccoeffs->ButterApprox(n_acoefs, n_bcoefs);
@@ -119,21 +119,21 @@ public:
     /**
      * @brief
      */
-    void UnnormCoefs()
+    void DenormalizeCoefficients()
     {
         T freq, // Stored value for unnormaliztion frequency
           BW,   /* For transformation to bandstop or bandpass type */
           Wo;
 
-        if(m_type == ApproxType::BUTTER
-           || m_type == ApproxType::CHEBY
-           || m_type == ApproxType::ELLIPT)
+        if(m_atype == ApproxType::BUTTER
+           || m_atype == ApproxType::CHEBY
+           || m_atype == ApproxType::ELLIPT)
         {
             freq = m_fparam.freq_passband.first;
             Wo = std::sqrt(m_fparam.freq_passband.first * m_fparam.freq_passband.second);
             BW = m_fparam.freq_passband.second - m_fparam.freq_passband.first;
         }
-        else if(m_type == ApproxType::ICHEBY)
+        else if(m_atype == ApproxType::ICHEBY)
         {
             freq = m_fparam.freq_stopband.first;
             Wo = std::sqrt(m_fparam.freq_stopband.first * m_fparam.freq_stopband.second);
@@ -155,7 +155,31 @@ public:
             m_calccoeffs->BSCoefsUnnorm(n_acoefs, n_bcoefs, un_acoefs, un_bcoefs, BW, Wo);
             break;
         }
+    }
 
+    std::size_t getFilterOrder() const
+    {
+        return m_order;
+    }
+
+    ApproxType getApproximationType()
+    {
+        return m_atype;
+    }
+
+    FilterType getFilterType()
+    {
+        return m_ftype;
+    }
+
+    std::pair<std::vector<T>, std::vector<T>> getNormalizeCoefficients()
+    {
+        return std::make_pair(n_acoefs, n_bcoefs);
+    }
+
+    std::pair<std::vector<T>, std::vector<T>> getDenormalizeCoefficients()
+    {
+        return std::make_pair(un_acoefs, un_bcoefs);
     }
 };
 
