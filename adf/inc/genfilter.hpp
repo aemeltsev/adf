@@ -60,7 +60,7 @@ struct FiltParam
 };
 
 /**
- * @brief
+ * @class
  */
 template<typename T=double>
 class CalcCoeffs
@@ -329,10 +329,10 @@ template<typename T>
 void CalcCoeffs<T>::ChebyApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bcoefs)
 {
     //Determine ripple factor
-    auto epsilon = std::sqrt(std::pow(10.0, -0.1*m_fparam.gain_passband.first) - 1);
+    auto epsilon = std::sqrt(std::pow(10.0, -0.1*m_fparam.gain_passband.first) - 1.0);
 
     //Determine minor axis radius of the ellipse
-    auto d = asinh(1/epsilon) / m_order;
+    auto d = asinh(1.0/epsilon) / m_order;
 
     // Counters
     int32_t a=0, b=0;
@@ -560,7 +560,14 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
     /**<  */
     size_coef = 3*origin_order;
 
-    //FIXME un_acoefs.resize() un_bcoefs.resize()
+    //filling input vectors to default values
+    un_acoefs.reserve(size_coef);
+    un_bcoefs.reserve(size_coef);
+    for(std::size_t ind=0; ind<size_coef; ++ind)
+    {
+        un_acoefs.push_back(0);
+        un_acoefs.push_back(0);
+    }
 
     /**< If original order is odd convert first order factor to quadratic,
      *  pos_start indicate start point for loop */
@@ -691,7 +698,14 @@ void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
     /**<  */
     size_coef = 3*origin_order;
 
-    //FIXME un_acoefs.resize() un_bcoefs.resize()
+    //filling input vectors to default values
+    un_acoefs.reserve(size_coef);
+    un_bcoefs.reserve(size_coef);
+    for(std::size_t ind=0; ind<size_coef; ++ind)
+    {
+        un_acoefs.push_back(0);
+        un_acoefs.push_back(0);
+    }
 
     /**< If original order is odd convert first order factor to quadratic,
      * pos_start indicate start point for loop */
@@ -817,8 +831,6 @@ void CalcCoeffs<T>::HPCoefsUnnorm(std::vector<T> &n_acoefs,
             pos_start,
             qd_count;
 
-    //FIXME un_acoefs.resize() un_bcoefs.resize()
-
     /**< First order type, if odd, set start position */
     if(m_order % 2)
     {
@@ -869,8 +881,6 @@ void CalcCoeffs<T>::LPCoefsUnnorm(std::vector<T> &n_acoefs,
     std::size_t nb_coef,
             qd_count,
             ps_start;
-
-    //FIXME un_acoefs.resize() un_bcoefs.resize()
 
     /**< First check order type, if odd, set start position to 1 else to 0 */
     if(m_order % 2)
