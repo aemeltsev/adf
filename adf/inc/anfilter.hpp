@@ -143,10 +143,16 @@ public:
         switch (m_ftype)
         {
         case FilterType::LPF:
-            m_calccoeffs->LPCoefsUnnorm(n_acoefs, n_bcoefs, un_acoefs, un_bcoefs, freq);
+            if(FillZeroCoeffs(un_acoefs, un_bcoefs, m_order))
+            {
+                m_calccoeffs->LPCoefsUnnorm(n_acoefs, n_bcoefs, un_acoefs, un_bcoefs, freq);
+            }
             break;
         case FilterType::HPF:
-            m_calccoeffs->HPCoefsUnnorm(n_acoefs, n_bcoefs, un_acoefs, un_bcoefs, freq);
+            if(FillZeroCoeffs(un_acoefs, un_bcoefs, m_order))
+            {
+                m_calccoeffs->HPCoefsUnnorm(n_acoefs, n_bcoefs, un_acoefs, un_bcoefs, freq);
+            }
             break;
         case FilterType::PBF:
             m_calccoeffs->BPCoefsUnnorm(n_acoefs, n_bcoefs, un_acoefs, un_bcoefs, BW, Wo);
