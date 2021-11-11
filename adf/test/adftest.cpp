@@ -212,9 +212,64 @@ TEST(BttrwCoeffFill, BNcoeffCheck)
     delete afilter;
 }
 
-TEST(EllUnCoeff, EllUnCoeffSize)
+TEST(CHebyUnCoeff, CHebyUnCoeff)
 {
+    //Arrange
+    constexpr int32_t order = 4;
+    constexpr int32_t cfsize = 7;
 
+    std::vector<double> navec{0.0, 0.0, 0.95046,
+                              0.0, 0.0, 0.24336,
+                              0.0};
+    std::vector<double> nbvec{1.0, 0.23826, 0.95046,
+                              1.0, 0.57521, 0.24335,
+                              0.0};
+
+    std::vector<double> unavec{0.0, 0.0, 1.23412,
+                             0.0, 0.0, 1.52305,
+                             0.0, 0.0, 1.52305};
+    std::vector<double> unbvec{0.0, 1.00000, 1.23412,
+                             1.00000, 0.76273, 1.52305,
+                             1.00000, 1.9968, 1.52305};
+
+    adf::FiltParam<double> fparam;
+    auto ftype = adf::FilterType::HPF;
+    auto fapprx = adf::ApproxType::CHEBY;
+
+    fparam.freq_passband.first = 2000.0;//wp1
+    fparam.freq_passband.second = 0.0;
+    fparam.freq_stopband.first = 800.0;//ws1
+    fparam.freq_stopband.second = 0.0;
+    fparam.gain_passband.first = -1.5;
+    fparam.gain_passband.second = 0.0;
+    fparam.gain_stopband.first = -40.0;
+    fparam.gain_stopband.second = 0.0;
+
+    auto afilter = new adf::AnalogFilter<double>(fparam, ftype, fapprx);
+
+    //Act
+    afilter->setOrder();
+    afilter->NormalizeCoefficients();
+    auto&& ncoeffs = afilter->getNormalizeCoefficients();
+    afilter->DenormalizeCoefficients();
+    auto uncoeffs = afilter->getDenormalizeCoefficients();
+
+    //Assert
+    ASSERT_EQ(afilter->getFilterOrder(), order);
+    for(auto i=0; i<cfsize; ++i)
+    {
+        std::cout << uncoeffs.second[i] << '\n';
+    }
+    ASSERT_TRUE(ncoeffs.first.size() > 0);
+    ASSERT_TRUE(ncoeffs.second.size() > 0);
+    ASSERT_EQ(ncoeffs.first.size(), cfsize);
+    ASSERT_EQ(ncoeffs.second.size(), cfsize);
+    for(auto i=0; i<cfsize; ++i)
+    {
+        ASSERT_EQ(std::round(ncoeffs.first[i]*10000)/10000, std::round(navec[i]*10000)/10000);
+        ASSERT_EQ(std::round(ncoeffs.second[i]*10000)/10000, std::round(nbvec[i]*10000)/10000);
+    }
+    delete afilter;
 }
 
 TEST(EllUnCoeff, EllUnCoeffCheck)
