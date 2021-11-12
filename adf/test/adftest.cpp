@@ -252,14 +252,10 @@ TEST(CHebyUnCoeff, CHebyUnCoeff)
     afilter->NormalizeCoefficients();
     auto&& ncoeffs = afilter->getNormalizeCoefficients();
     afilter->DenormalizeCoefficients();
-    auto uncoeffs = afilter->getDenormalizeCoefficients();
+    auto&& uncoeffs = afilter->getDenormalizeCoefficients();
 
     //Assert
     ASSERT_EQ(afilter->getFilterOrder(), order);
-    for(auto i=0; i<cfsize; ++i)
-    {
-        std::cout << uncoeffs.second[i] << '\n';
-    }
     ASSERT_TRUE(ncoeffs.first.size() > 0);
     ASSERT_TRUE(ncoeffs.second.size() > 0);
     ASSERT_EQ(ncoeffs.first.size(), cfsize);
@@ -269,12 +265,41 @@ TEST(CHebyUnCoeff, CHebyUnCoeff)
         ASSERT_EQ(std::round(ncoeffs.first[i]*10000)/10000, std::round(navec[i]*10000)/10000);
         ASSERT_EQ(std::round(ncoeffs.second[i]*10000)/10000, std::round(nbvec[i]*10000)/10000);
     }
+    ASSERT_EQ(uncoeffs.first.size(), cfsize);
+    ASSERT_EQ(uncoeffs.second.size(), cfsize);
     delete afilter;
 }
 
 TEST(EllUnCoeff, EllUnCoeffCheck)
 {
+    //Arrange
+    constexpr int32_t order = 4;
+    constexpr int32_t cfsize = 7;
 
+    adf::FiltParam<double> fparam;
+    auto ftype = adf::FilterType::LPF;
+    auto fapprx = adf::ApproxType::BUTTER;
+
+    fparam.freq_passband.first = 8620.0;//wp1
+    fparam.freq_passband.second = 0.0;
+    fparam.freq_stopband.first = 16880.0;//ws1
+    fparam.freq_stopband.second = 0.0;
+    fparam.gain_passband.first = -1.0;
+    fparam.gain_passband.second = 0.0;
+    fparam.gain_stopband.first = -17.0;
+    fparam.gain_stopband.second = 0.0;
+
+    auto afilter = new adf::AnalogFilter<double>(fparam, ftype, fapprx);
+
+    //Act
+    afilter->setOrder();
+    afilter->NormalizeCoefficients();
+    auto&& ncoeffs = afilter->getNormalizeCoefficients();
+    afilter->DenormalizeCoefficients();
+    auto&& uncoeffs = afilter->getDenormalizeCoefficients();
+
+    //Assert
+    ASSERT_EQ(afilter->getFilterOrder(), order);
 }
 
 #endif //ADF_TESTS_H
