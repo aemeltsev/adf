@@ -70,7 +70,7 @@ private:
     FilterType m_sfilter;
     ApproxType m_sapprox;
     std::size_t m_order = 0;
-    std::size_t m_gain = 0;
+    //std::size_t m_gain = 0;
     T CommonKernel();
     T FreqNorm();
 
@@ -573,7 +573,7 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
      *  pos_start indicate start point for loop */
     if(origin_order % 2)
     {
-        m_gain *= (n_acoefs[2] / n_bcoefs[2]);
+        m_fparam.gain *= (n_acoefs[2] / n_bcoefs[2]);
         un_acoefs[0] = 1.;
         un_acoefs[1] = un_bandwith * n_acoefs[1] / n_acoefs[2];
         un_acoefs[2] = un_centrfreq * un_centrfreq;
@@ -592,7 +592,7 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
     {
         origin_coef = qd_count * 3;
         new_coef = qd_count * 6 - pos_start * 3;
-        m_gain *= (n_acoefs[origin_coef+2] / n_bcoefs[origin_coef+2]);
+        m_fparam.gain *= (n_acoefs[origin_coef+2] / n_bcoefs[origin_coef+2]);
 
         if(n_acoefs[origin_coef] == 0)
         {
@@ -633,11 +633,13 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
             /**< Determine final values for new coefficients */
             un_acoefs[new_coef] = 1.;
             un_acoefs[new_coef+1] = -2. * D.getReal();
-            complex<T> fc_real = D * D.conj();
+            auto d_conj = D.conj();
+            auto fc_real = D * d_conj;
             un_acoefs[new_coef+2] = fc_real.getReal();
             un_acoefs[new_coef+3] = 1.;
             un_acoefs[new_coef+4] = -2. * E.getReal();
-            complex<T> sc_real = E * E.conj();
+            auto e_conj = E.conj();
+            auto sc_real = E * e_conj;
             un_acoefs[new_coef+5] = sc_real.getReal();
         }
         /*<  */
@@ -662,11 +664,13 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
 
         un_bcoefs[new_coef] = 1.;
         un_bcoefs[new_coef+1] = -2. * D.getReal();
-        complex<T> fc_real = std::move(D * D.conj());
+        auto d_conj = D.conj();
+        auto fc_real = std::move(D * d_conj);
         un_bcoefs[new_coef+2] = fc_real.getReal();
         un_bcoefs[new_coef+3] = 1.;
         un_bcoefs[new_coef+4] = -2. * E.getReal();
-        complex<T> sc_real = std::move(E * E.conj());
+        auto e_conj = E.conj();
+        auto sc_real = std::move(E * e_conj);
         un_bcoefs[new_coef+5] = sc_real.getReal();
     }
 }
@@ -772,11 +776,13 @@ void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
             /**< Determine final values for new coefficients */
             un_acoefs[new_coef] = 1.;
             un_acoefs[new_coef+1] = -2. * D.getReal();
-            complex<T> fc_real = D * D.conj();
+            auto d_conj = D.conj();
+            auto fc_real = D * d_conj;
             un_acoefs[new_coef+2] = fc_real.getReal();
             un_acoefs[new_coef+3] = 1.;
             un_acoefs[new_coef+4] = -2. * E.getReal();
-            complex<T> sc_real = E * E.conj();
+            auto e_conj = E.conj();
+            auto sc_real = E * e_conj;
             un_acoefs[new_coef+5] = sc_real.getReal();
         }
 
@@ -802,11 +808,13 @@ void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
 
         un_bcoefs[new_coef] = 1.;
         un_bcoefs[new_coef+1] = -2. * D.getReal();
-        complex<T> fc_real = std::move(D * D.conj());
+        auto d_conj = D.conj();
+        auto fc_real = std::move(D * d_conj);
         un_bcoefs[new_coef+2] = fc_real.getReal();
         un_bcoefs[new_coef+3] = 1.;
         un_bcoefs[new_coef+4] = -2. * E.getReal();
-        complex<T> sc_real = std::move(E * E.conj());
+        auto e_conj = E.conj();
+        auto sc_real = std::move(E * e_conj);
         un_bcoefs[new_coef+5] = sc_real.getReal();
     }
 }
@@ -848,13 +856,13 @@ void CalcCoeffs<T>::HPCoefsUnnorm(std::vector<T> &n_acoefs,
     for(qd_count = pos_start; qd_count < (m_order+1)/2; qd_count++)
     {
         coef_numb = qd_count*3;
-        m_fparam.gain *= (n_acoefs[2]/n_bcoefs[2]);
-        un_acoefs[coef_numb+1] = n_acoefs[coef_numb+1] * (freq/n_acoefs[coef_numb+2]);
+        m_fparam.gain *= (n_acoefs[coef_numb+2]/n_bcoefs[coef_numb+2]);
+        un_acoefs[coef_numb+1] *= (freq/n_acoefs[coef_numb+2]);
         un_acoefs[coef_numb+2] = freq * freq * n_acoefs[coef_numb]/n_acoefs[coef_numb+2];
-        un_acoefs[coef_numb] = 1.;
-        un_bcoefs[coef_numb+1] = n_bcoefs[coef_numb+1] * (freq/n_bcoefs[coef_numb+2]);
+        un_acoefs[coef_numb] = 1.0;
+        un_bcoefs[coef_numb+1] *= (freq/n_bcoefs[coef_numb+2]);
         un_bcoefs[coef_numb+2] = freq * freq * n_bcoefs[coef_numb]/n_bcoefs[coef_numb+2];
-        un_bcoefs[coef_numb] = 1.;
+        un_bcoefs[coef_numb] = 1.0;
     }
 }
 
@@ -878,29 +886,29 @@ void CalcCoeffs<T>::LPCoefsUnnorm(std::vector<T> &n_acoefs,
                                   std::vector<T> &un_bcoefs,
                                   const T freq)
 {
-    std::size_t nb_coef,
+    std::size_t coef_numb,
             qd_count,
-            ps_start;
+            pos_start;
 
     /**< First check order type, if odd, set start position to 1 else to 0 */
     if(m_order % 2)
     {
         un_acoefs[2] = n_acoefs[2]*freq;
         un_bcoefs[2] = n_bcoefs[2]*freq;
-        ps_start = 1;
+        pos_start = 1;
     }
     else
     {
-        ps_start = 0;
+        pos_start = 0;
     }
 
-    for(qd_count=ps_start; qd_count < (m_order+1)/2; ps_start++)
+    for(qd_count=pos_start; qd_count < (m_order+1)/2; qd_count++)
     {
-        nb_coef = qd_count*3;
-        un_acoefs[nb_coef+1] = n_acoefs[nb_coef+1]*freq;
-        un_acoefs[nb_coef+2] = n_acoefs[nb_coef+2]*(freq*freq);
-        un_bcoefs[nb_coef+1] = n_bcoefs[nb_coef+1]*freq;
-        un_bcoefs[nb_coef+2] = n_bcoefs[nb_coef+2]*freq;
+        coef_numb = qd_count*3;
+        un_acoefs[coef_numb+1] = n_acoefs[coef_numb+1] * freq;
+        un_acoefs[coef_numb+2] = n_acoefs[coef_numb+2] * (freq*freq);
+        un_bcoefs[coef_numb+1] = n_bcoefs[coef_numb+1] * freq;
+        un_bcoefs[coef_numb+2] = n_bcoefs[coef_numb+2] * (freq*freq);
     }
 }
 
