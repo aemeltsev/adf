@@ -4,14 +4,11 @@
 #ifndef COMPLEX_H
 #define COMPLEX_H
 #include <iostream>
-#include <cstdint>
-#include <memory>
 #include <cmath>
-#include <utility>
 
 namespace adf {
 
-template<class T>
+template<typename T>
 class complex
 {
     /**
@@ -27,32 +24,32 @@ public:
         ,m_im(im)
     {}
     //copy ctor
-    explicit complex(const complex& other)
+    complex(const complex& other)
         :m_re(other.m_re)
         ,m_im(other.m_im)
     {}
     //copy assign
     complex<T> &operator=(const complex<T>& other)
     {
-        if(this != other){
+        if(this != &other){
             m_re = other.m_re;
             m_im = other.m_im;
         }
-        return *this;
+        return (*this);
     }
     //move ctor
-    explicit complex(const complex&& other) noexcept
+    complex(const complex&& other) noexcept
         :m_re(std::move(other.m_re))
         ,m_im(std::move(other.m_im))
     {}
     //move assign
-    complex<T> &operator=(const complex<T>&& other)
+    complex<T> &operator=(complex<T>&& other)
     {
-        if(this != other){
+        if(this != &other){
             m_re = std::move(other.m_re);
             m_im = std::move(other.m_im);
         }
-        return *this;
+        return (*this);
     }
 
     /**
@@ -73,9 +70,6 @@ public:
     /**
      * @brief overloadings
      */
-    template<typename U> friend bool operator==(complex<U> &p_fr, complex<U> &p_sc);
-    template<typename U> friend bool operator!=(complex<U> &p_fr, complex<U> &p_sc);
-
     template<typename U> friend complex<U> operator+(complex<U> &p_fr, complex<U> &p_sc);
     template<typename U> friend complex<U> operator+(U &p_fr, complex<U> &p_sc);
     template<typename U> friend complex<U> operator+(complex<U> &p_sc, U &p_fr);
@@ -89,7 +83,14 @@ public:
     template<typename U> friend complex<U> operator/(U &p_fr, complex<U> &p_sc);
     template<typename U> friend complex<U> operator/(complex<U> &p_sc, U &p_fr);
 
+    template<typename U> friend bool operator==(complex<U> &p_fr, complex<U> &p_sc);
+    template<typename U> friend bool operator!=(complex<U> &p_fr, complex<U> &p_sc);
+    template<typename U> friend bool operator==(const complex<U> &p_fr, const complex<U> &p_sc);
+    template<typename U> friend bool operator!=(const complex<U> &p_fr, const complex<U> &p_sc);
+
+    complex<T> operator+() {return *this;}
     complex<T> operator+() const {return *this;}
+    complex<T> operator-() {return complex<T>(-m_re, -m_im);}
     complex<T> operator-() const {return complex<T>(-m_re, -m_im);}
 
     complex<T> &operator+=(complex<T> &p_val);
@@ -103,10 +104,8 @@ public:
     /**
      * @brief out stream
      */
-    friend std::ofstream &operator<<(std::ostream &p_out, const complex<T> &p_val)
-    {
-        return p_out << "(" << p_val.getReal() << "," << p_val.getImag() << ")";
-    }
+    template<typename U>
+    friend std::ostream &operator<<(std::ostream &p_out, const complex<U> &p_val);
 };
 
 /**
@@ -114,7 +113,7 @@ public:
  *  @param - unique pointer to complex value
  *  @return - returns the square root of complex number
  */
-template<class T>
+template<typename T>
 inline complex<T> sqrt(complex<T>& p_val)
 {
     T real = std::sqrt(p_val.mag()) * std::cos(p_val.arg()/2.);
@@ -129,7 +128,7 @@ inline complex<T> sqrt(complex<T>& p_val)
  *  @param - c
  *  @return - std::pairs with complex roots
  */
-template<class T>
+template<typename T>
 inline std::pair<complex<T>, complex<T>> quadr(
         complex<T>& p_a,
         complex<T>& p_b,
@@ -158,5 +157,166 @@ inline std::pair<complex<T>, complex<T>> quadr(
     return std::make_pair(fr_root/a2_var, sc_root/a2_var);
 }
 
+template<typename T>
+std::ostream &operator<<(std::ostream &p_out, const complex<T> &p_val)
+{
+    p_out << p_val.getReal();
+    T im = p_val.getImag();
+    if(im < 0)
+        p_out << im << "i";
+    else if(im > 0)
+        p_out << "+" << im << "i";
+    return p_out;
+}
+
+template<typename T>
+inline bool operator==(complex<T> &p_fr, complex<T> &p_sc)
+{
+    return ((p_fr.getReal()==p_sc.getReal())&&(p_fr.getImag()==p_sc.getImag())) ? true : false;
+}
+
+template<typename T>
+inline bool operator!=(complex<T> &p_fr, complex<T> &p_sc)
+{
+    return (p_fr==p_sc) ? true : false;
+}
+
+template<typename T>
+inline bool operator==(const complex<T> &p_fr, const complex<T> &p_sc)
+{
+    return ((p_fr.getReal()==p_sc.getReal())&&(p_fr.getImag()==p_sc.getImag())) ? true : false;
+}
+
+template<typename T>
+inline bool operator!=(const complex<T> &p_fr, const complex<T> &p_sc)
+{
+    return (p_fr==p_sc) ? true : false;
+}
+
+template<typename T>
+inline complex<T> operator+(complex<T> &p_fr, complex<T> &p_sc)
+{
+    return complex<T>((p_fr.m_re+p_sc.m_re), (p_fr.m_im+p_sc.m_im));
+}
+
+template<typename T>
+inline complex<T> operator+(T &p_fr, complex<T> &p_sc)
+{
+    return complex<T>((p_fr+p_sc.m_re), p_sc.m_im);
+}
+
+template<typename T>
+inline complex<T> operator+(complex<T> &p_sc, T &p_fr)
+{
+    return complex<T>((p_sc.m_re+p_fr), p_sc.m_im);
+}
+
+template<typename T>
+inline complex<T> operator-(complex<T> &p_fr, complex<T> &p_sc)
+{
+    return complex<T>((p_fr.m_re+p_sc.m_re), (p_fr.m_im+p_sc.m_im));
+}
+
+template<typename T>
+inline complex<T> operator-(T &p_fr, complex<T> &p_sc)
+{
+    return complex<T>((p_fr-p_sc.m_re), p_sc.m_im);
+}
+
+template<typename T>
+inline complex<T> operator-(complex<T> &p_sc, T &p_fr)
+{
+    return complex<T>((p_sc.m_re-p_fr), p_sc.m_im);
+}
+
+template<typename T>
+inline complex<T> operator*(complex<T> &p_fr, complex<T> &p_sc)
+{
+    T real = p_fr.getReal()*p_sc.getReal() - p_fr.getImag()*p_sc.getImag();
+    T imag = p_fr.getReal()*p_sc.getImag() + p_sc.getReal()*p_fr.getImag();
+    return complex<T>(real, imag);
+}
+
+template<typename T>
+inline complex<T> operator*(T &p_fr, complex<T> &p_sc)
+{
+    return complex<T>((p_sc.m_re*p_fr), (p_sc.m_im*p_fr));
+}
+
+template<typename T>
+inline complex<T> operator*(complex<T> &p_sc, T &p_fr)
+{
+    return complex<T>((p_sc.m_re*p_fr), (p_sc.m_im*p_fr));
+}
+
+template<typename T>
+inline complex<T> operator/(complex<T> &p_fr, complex<T> &p_sc)
+{
+    T real = (p_fr.getReal()*p_sc.getImag() + p_fr.getImag()*p_sc.getImag())/(p_sc.getReal()*p_sc.getReal() + p_sc.getImag()*p_sc.getImag());
+    T imag = (p_sc.getReal()*p_fr.getImag() - p_fr.getReal()*p_sc.getImag())/(p_sc.getReal()*p_sc.getReal() + p_sc.getImag()*p_sc.getImag());
+    return complex<T>(real, imag);
+}
+
+template<typename T>
+complex<T> &complex<T>::operator+=(complex<T> &p_val)
+{
+    m_re += p_val.m_re;
+    m_im += p_val.m_im;
+    return *this;
+}
+
+template<typename T>
+complex<T> &complex<T>::operator+=(T p_val)
+{
+    m_re += p_val;
+    return *this;
+}
+
+template<typename T>
+complex<T> &complex<T>::operator-=(complex<T> &p_val)
+{
+    m_re -= p_val.m_re;
+    m_im -= p_val.m_im;
+    return *this;
+}
+
+template<typename T>
+complex<T> &complex<T>::operator-=(T p_val)
+{
+    m_re -= p_val;
+    return *this;
+}
+
+template<typename T>
+complex<T> &complex<T>::operator*=(complex<T> &p_val)
+{
+    m_re = m_re*p_val.getReal() - m_im*p_val.getImag();
+    m_im = m_re*p_val.getImag() + p_val.getReal()*m_im;
+    return *this;
+}
+
+template<typename T>
+complex<T> &complex<T>::operator*=(T p_val)
+{
+    m_re *= p_val;
+    m_im *= p_val;
+    return *this;
+}
+
+template<typename T>
+complex<T> &complex<T>::operator/=(complex<T> &p_val)
+{
+    m_re = (m_re*p_val.getReal() + m_im*p_val.getImag())/(p_val.getReal()*p_val.getReal() + p_val.getImag()*p_val.getImag());
+    m_im = (p_val.getReal()*m_im - m_re*p_val.getImag())/(p_val.getReal()*p_val.getReal() + p_val.getImag()*p_val.getImag());
+    return *this;
+}
+
+template<typename T>
+complex<T> &complex<T>::operator/=(T p_val)
+{
+    m_re /= p_val;
+    m_im /= p_val;
+    return *this;
+}
 }
 #endif // COMPLEX_H
