@@ -27,6 +27,9 @@ constexpr double ERR_SMALL(1e-15);
 
 constexpr double ADF_RAD2DEG(180.0/ADF_PI);
 
+constexpr long double ADF_ZERO(1e-30);
+constexpr long ADF_MAX_PTR(640);
+
 /* errors */
 std::string error(const std::string& err, const char* func, const char* file, int16_t line)
 {

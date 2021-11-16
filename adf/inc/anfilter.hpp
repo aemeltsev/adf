@@ -4,7 +4,6 @@
 #include "genfilter.hpp"
 
 namespace adf {
-
 /**
  * @class AnalogFilter
  */
@@ -52,7 +51,6 @@ class AnalogFilter
         bool success = false;
         if(num > 0 && num < MAX_TERMS)
         {
-            //FIXME using std::vector.resize()
             success = true;
             std::size_t number_coeffs = (3 * (num + 1)) / 2;
             avec.reserve(number_coeffs);
