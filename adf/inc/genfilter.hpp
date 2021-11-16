@@ -911,7 +911,5 @@ void CalcCoeffs<T>::LPCoefsUnnorm(std::vector<T> &n_acoefs,
         un_bcoefs[coef_numb+2] = n_bcoefs[coef_numb+2] * (freq*freq);
     }
 }
-
-
 } //adf
 #endif //GENFILTER_H

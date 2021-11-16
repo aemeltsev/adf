@@ -212,7 +212,7 @@ TEST(BttrwCoeffFill, BNcoeffCheck)
     delete afilter;
 }
 
-TEST(CHebyUnCoeff, CHebyUnCoeff)
+TEST(UnCoeff, CHebyUnCoeff)
 {
     //Arrange
     constexpr int32_t order = 4;
@@ -270,7 +270,7 @@ TEST(CHebyUnCoeff, CHebyUnCoeff)
     delete afilter;
 }
 
-TEST(EllUnCoeff, EllUnCoeffCheck)
+TEST(UnCoeff, BttUnCoeff)
 {
     //Arrange
     constexpr int32_t order = 4;
