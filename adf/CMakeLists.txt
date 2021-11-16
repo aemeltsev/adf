@@ -7,6 +7,7 @@ set(
         inc/genfilter.hpp
         inc/anfilter.hpp
         inc/iirfilter.hpp
+        inc/fresp.hpp
         src/complex.cpp
     )
 
