@@ -1,7 +1,7 @@
 #ifndef GENFILTER_H
 #define GENFILTER_H
-#include <cstdint>
-#include <memory>
+//#include <cstdint>
+//#include <memory>
 #include <cmath>
 #include <vector>
 
