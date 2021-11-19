@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "base.hpp"
+
 namespace adf {
 
 enum class Scale
@@ -35,12 +36,12 @@ class Response
     /*Field for estimation during initialization and fields used for subsequent calculations*/
     std::size_t m_resolution=0;
     T m_ratio=0.;
-    std::vector<T> freq; //frequency values
-    std::vector<T> magn; //output magnitude values
-    std::vector<T> angl; //output phase values
-    std::vector<T> edge_magn; //edge frequency magnitudes
-    std::vector<T> edge_angl; //edge frequency phases
-    std::size_t num_edge_freq;
+    std::vector<T> m_freq; //frequency values
+    std::vector<T> m_magn; //output magnitude values
+    std::vector<T> m_angl; //output phase values
+    std::vector<T> m_edge_magn; //edge frequency magnitudes
+    std::vector<T> m_edge_angl; //edge frequency phases
+    std::size_t m_num_edge_freq;
 
     void ResponseInit();
 
@@ -66,17 +67,22 @@ public:
             m_resolution=3;
             break;
         }
+
+        ResponseInit();
     }
 
     void VectorFill();
 
-    void respAnalog();
-    void respDigitalIIR();
-    void respDigitalFIR();
+    void respAnalog(std::vector<T> &a_coeff,
+                    std::vector<T> &b_coeff,
+                    const std::size_t order,
+                    const T gain);
+    //void respDigitalIIR();
+    //void respDigitalFIR();
 
-    std::vector<T> getFrequency();
-    std::vector<T> getMagnitude();
-    std::vector<T> getPhase();
+    std::vector<T> getFrequency(){return m_freq;}
+    std::vector<T> getMagnitude(){return m_magn;}
+    std::vector<T> getPhase(){return m_angl;}
     //std::vector<T> getEdgeMagnitude();
     //std::vector<T> getEdgePhase();
     //std::size_t getNumEdgeFrequency();
@@ -122,34 +128,87 @@ void Response<T>::VectorFill()
 {
 
     T delta;
-    freq.reserve(m_tot_pts);
-    magn.reserve(m_tot_pts);
-    angl.reserve(m_tot_pts);
+    m_freq.reserve(m_tot_pts);
+    m_magn.reserve(m_tot_pts);
+    m_angl.reserve(m_tot_pts);
 
     for(auto ind = 0; ind<m_tot_pts; ++ind)
     {
-        magn.push_back(0.);
-        angl.push_back(0.);
+        m_magn.push_back(0.);
+        m_angl.push_back(0.);
     }
 
     if(m_frq == Scale::LIN)
     {
         delta = (m_stop_freq - m_start_freq) / (m_tot_pts - 1);
 
-        freq.pop_back(m_start_freq);
+        m_freq.pop_back(m_start_freq);
         for(auto ind = 1; ind<m_tot_pts; ++ind)
         {
-            freq.push_back(freq[ind-1] + delta);
+            m_freq.push_back(m_freq[ind-1] + delta);
         }
     }
     else
     {
         delta = std::pow(10, 1.0/m_dec_pts);
 
-        freq.pop_back(m_start_freq);
+        m_freq.pop_back(m_start_freq);
         for(auto ind = 1; ind<m_tot_pts; ++ind)
         {
-            freq.push_back(freq[ind-1] * delta);
+            m_freq.push_back(m_freq[ind-1] * delta);
+        }
+    }
+}
+
+template<typename T>
+void Response<T>::respAnalog(std::vector<T>& a_coeff, std::vector<T>& b_coeff, const std::size_t order, const T gain)
+{
+    VectorFill();
+
+    for(auto find=0; find<m_tot_pts; ++find)
+    {
+        m_magn[find] = gain;
+
+        auto omega = ADF_PI_2 * m_magn[find];
+        auto pow2omega = omega * omega;
+
+        for(auto qind=0; qind<(order+1)/2; ++qind)
+        {
+            auto cindx = qind * 3;
+            //Numerator
+            auto real = a_coeff[cindx + 2] - a_coeff[cindx] * pow2omega;
+            auto imag = a_coeff[cindx + 1] * omega;
+            auto mag = std::sqrt(real*real + imag*imag);
+            m_magn[find] *= mag;
+
+            if(mag > 0)
+            {
+                m_angl[find] += std::atan2(imag, real);
+            }
+            //Denominator
+            real = b_coeff[cindx + 2] - b_coeff[cindx] * pow2omega;
+            imag = b_coeff[cindx + 1] * omega;
+            mag = std::sqrt(real*real + imag*imag);
+            m_magn[find] /= mag;
+
+            if(mag > 0)
+            {
+                m_angl[find] -= std::atan2(imag, real);
+            }
+        }
+
+        m_angl[find] *= ADF_RAD2DEG;
+    }
+
+    if(m_mag == Scale::LOG)
+    {
+        for(auto find=0; find<m_tot_pts; ++find)
+        {
+            if(m_magn[find] < ADF_ZERO)
+            {
+                m_magn[find] = ADF_ZERO;
+            }
+            m_magn[find] = 20 * std::log10(m_magn[find]);
         }
     }
 }
