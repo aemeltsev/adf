@@ -24,7 +24,7 @@ public:
         ,m_im(im)
     {}
     //copy ctor
-    complex(const complex& other)
+    complex(const complex<T>& other)
         :m_re(other.m_re)
         ,m_im(other.m_im)
     {}
