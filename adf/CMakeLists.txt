@@ -8,6 +8,7 @@ set(
         inc/anfilter.hpp
         inc/iirfilter.hpp
         inc/fresp.hpp
+        inc/polynom.hpp
         src/complex.cpp
     )
 
