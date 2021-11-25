@@ -90,6 +90,11 @@ public:
         m_data = std::move(other.m_data);
     }
 
+    /**
+     * @brief operator = move assignment operator
+     * @param other constant object polynomial rvalue type
+     * @return
+     */
     polynomial<T> &operator=(const polynomial<T>&& other)
     {
         if(this != &other){
