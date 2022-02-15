@@ -149,7 +149,7 @@ inline std::pair<complex<T>, complex<T>> quadr(
 
     sq1_tmp = p_b * p_b;
     sq2_tmp = sq1_tmp - ac4_var;
-    sq_var = adf::sqrt(sq2_tmp); /**< sqrt(b*b - 4*a*c */
+    sq_var = adf::sqrt(sq2_tmp); /**< sqrt(b*b - 4*a*c) */
 
     pb_tmp = -pb_tmp;
     fr_root = pb_tmp + sq_var; /**< for first root */
@@ -318,5 +318,6 @@ complex<T> &complex<T>::operator/=(T p_val)
     m_im /= p_val;
     return *this;
 }
-}
+
+} //namespace adf
 #endif // COMPLEX_H
