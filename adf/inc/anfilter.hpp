@@ -1,3 +1,6 @@
+/**
+  * License text...
+*/
 #ifndef ANALOGFILTER_H
 #define ANALOGFILTER_H
 

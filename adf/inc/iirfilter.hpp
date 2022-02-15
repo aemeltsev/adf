@@ -1,3 +1,6 @@
+/**
+  * License text...
+*/
 #ifndef DIGIIRFILTER_H
 #define DIGIIRFILTER_H
 

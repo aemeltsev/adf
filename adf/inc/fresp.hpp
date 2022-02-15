@@ -1,3 +1,6 @@
+/**
+  * License text...
+*/
 #ifndef FRESPONSE_H
 #define FRESPONSE_H
 #include <cmath>
@@ -172,7 +175,7 @@ void Response<T>::respAnalog(std::vector<T>& a_coeff, std::vector<T>& b_coeff, c
         auto omega = ADF_PI_2 * m_magn[find];
         auto pow2omega = omega * omega;
 
-        for(auto qind=0; qind<(order+1)/2; ++qind)
+        for(std::size_t qind=0; qind<(order+1)/2; ++qind)
         {
             auto cindx = qind * 3;
             //Numerator

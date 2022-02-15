@@ -1,3 +1,6 @@
+/**
+  * License text...
+*/
 #ifndef GENFILTER_H
 #define GENFILTER_H
 #include <cmath>
