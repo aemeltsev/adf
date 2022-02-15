@@ -23,10 +23,11 @@ if(NOT GTEST_FOUND)
 endif()
 
 set(TESTS
-        adftest.cpp
-        main.cpp)
+    adftest.hpp
+    polytest.hpp
+    main.cpp)
 
 add_executable(adf_test ${TESTS})
 target_compile_features(adf_test PRIVATE cxx_auto_type)
-target_link_libraries(adf_test adf gtest_main pthread)
+target_link_libraries(adf_test adf GTest::gtest GTest::gtest_main pthread)
 add_test(NAME adf_test COMMAND adf_test)
