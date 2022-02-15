@@ -1,15 +1,16 @@
-set(
-    SOURCES
-        inc/advmath.hpp
-        inc/complex.hpp
-        inc/base.hpp
-        inc/adfilter.hpp
-        inc/genfilter.hpp
-        inc/anfilter.hpp
-        inc/iirfilter.hpp
-        inc/fresp.hpp
-        inc/polynom.hpp
-        src/complex.cpp
+set(SOURCES
+    inc/advmath.hpp
+    inc/complex.hpp
+    inc/base.hpp
+    inc/adfilter.hpp
+    inc/genfilter.hpp
+    inc/anfilter.hpp
+    inc/iirfilter.hpp
+    inc/fresp.hpp
+    inc/polynomial.hpp
+    inc/fft.hpp
+    src/complex.cpp
+    src/polynomial.cpp
     )
 
 #Declare library
@@ -35,4 +36,23 @@ install(
     RUNTIME DESTINATION bin
  )
 
- add_subdirectory(test)
+
+
+# Add configs
+#configure_file(adfilter.pc.in adfilter.pc @ONLY)
+
+# Compiler settings
+#target_compile_features(${BIN} PUBLIC cxx_std_11)
+
+# Install and export the library
+#install(TARGETS adf
+#    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+#install(FILES ${CMAKE_BINARY_DIR}/adfilter.pc
+#    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
+
+##############################################
+## Add test
+enable_testing()
+add_subdirectory(test)
