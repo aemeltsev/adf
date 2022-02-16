@@ -23,7 +23,7 @@ template<typename T>
 class polynomial
 {
     std::vector<T> m_data;
-    std::size_t m_order;
+    bool m_reversed = false;
 
     void _normalize(std::vector<T>& other)
     {
@@ -36,37 +36,39 @@ class polynomial
          }
     }
 
+    void _reverse(std::vector<T>& other)
+    {
+        std::reverse(other.begin(), other.end());
+    }
+
 public:
     /**
      * @class polynomial default ctor with initialize order = 0, and not allocate data
      */
-    polynomial() noexcept
-    {
-        m_order=0;
-    }
+    polynomial()
+    {}
     /**
      * @brief polynomial for data using input vector
      * @param order first initialize value
      * @param data input array
      *        \f$ a_{n+1}*x^{n} + a_{n}*x^{n-1} + \ldots + a_{1}*x^{1} + a_{0} \f$
      */
-    explicit polynomial(std::vector<T> data, std::size_t order) noexcept
+    explicit polynomial(const std::initializer_list<T>& list)
+        :m_data(std::move(list))
     {
-        assert(((m_order == 0)||(!data.empty())) && " Zero order or array empty");
-        assert((m_order == (data.size()+1)) && "Order and data size+1 not equal");
-        m_order = order;
-        m_data.reserve(m_order+1);
-        m_data = std::move(data);
+        this->_reverse(m_data);
+        m_reversed = true;
     }
 
     /**
      * @brief polynomial - reserve data for order size
      * @param order - order value
      */
-    explicit polynomial(std::size_t order) noexcept
-        :m_order(order)
+    polynomial(std::size_t size) noexcept
     {
-        m_data(order, 0);
+        m_data.resize(size);
+        std::fill(m_data.begin(), m_data.end(), 0);
+        m_reversed = true;
     }
 
     /**
@@ -75,9 +77,8 @@ public:
      */
     explicit polynomial(const T& data) noexcept
     {
-        m_order = 1;
-        m_data.reserve(m_order);
-        m_data.push_back(data);
+        m_data.reserve(1);
+        m_data.push_back(std::move(data));
     }
 
     /**
@@ -85,10 +86,11 @@ public:
      * @param other constant object polynomial type
      */
     polynomial(const polynomial<T>& other)
-        :m_order(other.m_order)
     {
-        m_data.reserve((other.m_order)+1);
-        std::copy(other.begin(), other.end(), m_data.begin());
+        if(this != &other){
+            m_data.reserve(other.size());
+            std::copy(other.m_data.begin(), other.m_data.end(), m_data.begin());
+        }
     }
 
     /**
@@ -99,8 +101,8 @@ public:
     polynomial<T> &operator=(const polynomial<T>& other)
     {
         if(this != &other){
-            m_order = other.m_order;
-            m_data.reserve((other.m_order)+1);
+            m_data.clear();
+            m_data.reserve(other.size());
             std::copy(other.begin(), other.end(), m_data.begin());
         }
         return (*this);
@@ -111,10 +113,10 @@ public:
      * @param other constant object polynomial rvalue type
      */
     polynomial(const polynomial<T>&& other)
-        :m_order(std::move(other.m_data))
     {
-        m_data.reserve((other.m_order)+1);
-        m_data = std::move(other.m_data);
+        if(this != &other){
+            m_data = std::move(other.m_data);
+        }
     }
 
     /**
@@ -125,21 +127,29 @@ public:
     polynomial<T> &operator=(const polynomial<T>&& other)
     {
         if(this != &other){
-            m_order = std::move(other.m_order);
-            m_data.reserve((other.m_order)+1);
+            m_data.clear();
+            m_data.reserve(other.size());
             m_data = std::move(other.m_data);
         }
         return (*this);
     }
     
-    explicit polynomial(const std::initializer_list<T>& list)
-        :m_data(list)
-        ,m_order(list.size())
-    {}
-
-    auto normalize() -> void { _normalize(m_data); }
-    auto order() -> std::size_t { return this->m_order; }
-    auto reverse() -> polynomial<T>;
+    void normalize() { _normalize(m_data); }
+    std::size_t size() {return m_data.size();}
+    std::size_t size() const {return m_data.size();}
+    bool empty() { return size() == 0;}
+    polynomial<T> unreverse()
+    {
+        polynomial<T> tmp(*this);
+        _reverse(tmp.m_data);
+        m_reversed = false;
+        return tmp;
+    }
+    std::vector<T> data() const
+    {
+        polynomial<T> tmp = unreverse();
+        return tmp.m_data;
+    }
 
     /**
      * @brief overloaded operators
@@ -148,15 +158,10 @@ public:
     polynomial<T> operator+() const { return *this; }
     polynomial<T> operator-() const;
 
-    polynomial<T> operator+(polynomial<T>& other);
-    polynomial<T> operator+(polynomial<T>& other) const;
-    polynomial<T> operator-(polynomial<T>& other);
+    polynomial<T> operator+(const polynomial<T> &other) const;
     polynomial<T> operator-(polynomial<T>& other) const;
-    polynomial<T> operator*(polynomial<T>& other);
     polynomial<T> operator*(polynomial<T>& other) const;
-    polynomial<T> operator/(polynomial<T>& other);
     polynomial<T> operator/(polynomial<T>& other) const;
-    polynomial<T> operator%(polynomial<T>& other);
     polynomial<T> operator%(polynomial<T>& other) const;
 
     polynomial<T> operator^(polynomial<T>& other) const;
@@ -178,7 +183,7 @@ public:
     polynomial<T>& operator/=(const T& data);
 
     T& operator[](std::size_t i) {return this->m_data[i];}
-    T& operator[](std::size_t i) const {return this->m_data[i];}
+    const T& operator[](std::size_t i) const {return this->m_data[i];}
 
     /**
      * @brief out stream
@@ -187,38 +192,18 @@ public:
     friend std::ostream &operator<<(std::ostream &p_out, const polynomial<U> &p_val);
 };
 
-template<typename U> polynomial<U> operator+(polynomial<U> &p_fr, polynomial<U> &p_sc)
+template<typename U>
+std::ostream &operator<<(std::ostream &p_out, const polynomial<U> &p_val)
 {
-    auto ms = std::max(p_fr.order(), p_sc.order());
-    polynomial<U> temp(ms);
-
-    for(auto i = ms-1; i >= std::min(p_fr.order(), p_sc.order()); --i)
+    if(p_val.empty()) return p_out << U(0);
+    polynomial<U> tmp(p_val);
+    tmp.unreverse();
+    for(auto i=0; i<tmp.size(); ++i)
     {
-        temp[i] = (p_fr.order() > p_sc.order() ? p_fr[i] : p_sc[i]);
+        p_out << tmp[i];
     }
-    for(auto j = std::min(p_fr.order(), p_sc.order())-1; j >=0; --j)
-    {
-        temp[j] = p_fr[j] + p_sc[j];
-    }
-    temp.normalize();
-    return temp;
+    return p_out;
 }
-
-template<typename U> polynomial<U> operator-(polynomial<U> &p_fr, polynomial<U> &p_sc)
-{
-
-}
-
-template<typename U> polynomial<U> operator*(polynomial<U> &p_fr, polynomial<U> &p_sc)
-{
-
-}
-
-template<typename U> polynomial<U> operator/(polynomial<U> &p_fr, polynomial<U> &p_sc)
-{
-
-}
-
 
 template<typename U> bool operator==(polynomial<U> &p_fr, polynomial<U> &p_sc);
 template<typename U> bool operator!=(polynomial<U> &p_fr, polynomial<U> &p_sc);
@@ -232,21 +217,21 @@ template<typename T>
 polynomial<T> polynomial<T>::operator-() const
 {
     polynomial<T> tmp(*this);
-    for(auto i=0; i<tmp.m_data.size(); ++i) tmp.m_data[i] = -(tmp.m_data);
+    for(auto i=0; i<tmp.size(); ++i) tmp[i] = -(tmp[i]);
     return tmp;
 }
 
 template<typename T>
-polynomial<T> polynomial<T>::operator+(polynomial<T>& other)
+polynomial<T> polynomial<T>::operator+(const polynomial<T>& other) const
 {
-    auto ms = std::max(this->order(), other.order());
+    std::size_t ms = std::max(this->m_data.size(), other.size());
     polynomial<T> temp(ms);
 
-    for(auto i = ms-1; i >= std::min(this->order(), other.order()); --i)
+    for(int i = ms-1; i >= std::min(this->m_data.size(), other.size()); --i)
     {
-        temp[i] = (this->order() > other.order() ? this->m_data[i] : other[i]);
+        temp[i] = (this->m_data.size(), other.size() ? this->m_data[i] : other[i]);
     }
-    for(auto j = std::min(this->order(), other.order())-1; j >=0; --j)
+    for(int j = std::min(this->m_data.size(), other.size())-1; j >=0; --j)
     {
         temp[j] = this->m_data[j] + other[j];
     }
@@ -255,25 +240,7 @@ polynomial<T> polynomial<T>::operator+(polynomial<T>& other)
 }
 
 template<typename T>
-polynomial<T> polynomial<T>::operator+(polynomial<T>& other) const
-{
-
-}
-
-template<typename T>
-polynomial<T> polynomial<T>::operator-(polynomial<T>& other)
-{
-
-}
-
-template<typename T>
 polynomial<T> polynomial<T>::operator-(polynomial<T>& other) const
-{
-
-}
-
-template<typename T>
-polynomial<T> polynomial<T>::operator*(polynomial<T>& other)
 {
 
 }
@@ -285,19 +252,7 @@ polynomial<T> polynomial<T>::operator*(polynomial<T>& other) const
 }
 
 template<typename T>
-polynomial<T> polynomial<T>::operator/(polynomial<T>& other)
-{
-
-}
-
-template<typename T>
 polynomial<T> polynomial<T>::operator/(polynomial<T>& other) const
-{
-
-}
-
-template<typename T>
-polynomial<T> polynomial<T>::operator%(polynomial<T>& other)
 {
 
 }
@@ -347,7 +302,7 @@ polynomial<T> polynomial<T>::operator%(const T& data) const
 template<typename T>
 polynomial<T>& polynomial<T>::operator+=(const polynomial<T>& other)
 {
-
+    return *this = *this + other;
 }
 
 template<typename T>
