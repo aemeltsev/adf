@@ -178,7 +178,7 @@ public:
     void transform()
     {
         uint32_t i, j;
-        uint64_t it_max = 1 << m_2_pow;
+        uint32_t it_max = 1 << m_2_pow;
 
         // 1. bit reverse
         for(i = 1; i < it_max - 1; ++i)
@@ -239,7 +239,7 @@ public:
 
         if(m_invert)
         {
-            for(auto j = 0; j < it_max; ++j)
+            for(uint32_t j = 0; j < it_max; ++j)
             {
                 m_data[j] /= it_max;
             }
