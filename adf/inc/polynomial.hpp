@@ -21,10 +21,14 @@ namespace adf
 template<typename T>
 class polynomial
 {
-    std::vector<T> m_data;
+    using vec = std::vector<T>;
+    using vec_ref = std::vector<T>&;
+    using pair_vec = std::pair<vec, vec>;
+
+    vec m_data;
     bool m_reversed = false;
 
-    void _normalize(std::vector<T>& other)
+    void _normalize(vec_ref other)
     {
         for(auto iter = other.rbegin(); iter != other.rend(); ++iter) {
              if(*iter == T(0)) {
@@ -35,7 +39,7 @@ class polynomial
          }
     }
 
-    void _reverse(std::vector<T>& other)
+    void _reverse(vec_ref other)
     {
         std::reverse(other.begin(), other.end());
     }
@@ -76,13 +80,79 @@ class polynomial
         }
     }
 
-    void _shift_pow10(std::size_t n, std::vector<T>& v)
+    void _shift_pow10(std::size_t n, vec_ref v)
     {
         std::size_t i = 0;
         while(i < n){
             v.insert(v.begin(), 0);
             ++i;
         }
+    }
+
+    /**
+     * @brief _pld polynomial long division n / d == q && n % d == r
+     * @param n numerator
+     * @param d denominator
+     * @return std::pair ret - with two vectors = ret.first - quiet
+     *         ret.second - remainder
+     */
+    pair_vec _pld(vec_ref n, vec_ref d)
+    {
+        if(n.size() == 0 && d.size() == 0)
+        {
+            return {n, d};
+        }
+
+        auto d_size = d.size();
+        auto n_degree = n.size() - 1;
+        auto d_degree = d.size() - 1;
+
+        auto _q_degree = n_degree - d_degree;
+        auto _r_degree = n_degree - d_degree;
+        std::size_t _d_tmp;
+
+        vec _d, _q, _r;
+        _d.resize(n_degree + 1);
+        _q.resize(_q_degree + 1);
+        _r.resize(_r_degree + 1);
+
+        if(n_degree >= d_degree)
+        {
+            while(n_degree >= d_degree)
+            {
+                _d.assign(d_size, 0);
+
+                for(auto i = 0; i <= d_degree; ++i)
+                {
+                    _d[i + n_degree - d_degree] = d[i];
+                }
+
+                _d_tmp = n_degree;
+                _q[n_degree - d_degree] = n[n_degree] / _d[_d_tmp];
+
+                for(auto j = 0; j < _q_degree + 1; ++j)
+                {
+                    _d[j] = _d[j] * _q[n_degree - d_degree];
+                }
+
+                for(auto k = 0; k < n_degree; ++k)
+                {
+                    n[k] -= _d[k];
+                }
+                --n_degree;
+            }
+        }
+        for(auto i = 0; i <= n_degree; ++i)
+        {
+            _r[i] = n[i];
+        }
+        return {_q, _r};
+    }
+
+    polynomial(vec v)
+        :m_data(std::move(v))
+    {
+        _normalize(m_data);
     }
 
 public:
@@ -179,9 +249,13 @@ public:
     }
     
     void normalize() { _normalize(m_data); }
+
     std::size_t size() {return m_data.size();}
+
     std::size_t size() const {return m_data.size();}
+
     bool empty() { return size() == 0;}
+
     polynomial<T> unreverse()
     {
         polynomial<T> tmp(*this);
@@ -189,21 +263,16 @@ public:
         m_reversed = false;
         return tmp;
     }
-    std::vector<T> data() const
+
+    vec data() const
     {
         polynomial<T> tmp = unreverse();
         return tmp.m_data;
     }
 
-    void padding(polynomial<T>& other)
-    {
-        _padding(*this, other);
-    }
+    void padding(polynomial<T>& other) { _padding(*this, other); }
 
-    void shift_pow10(std::size_t n)
-    {
-        _shift_pow10(n, this->m_data);
-    }
+    void shift_pow10(std::size_t n) { _shift_pow10(n, this->m_data); }
 
     /**
      * @brief overloaded operators
@@ -230,14 +299,16 @@ public:
     polynomial<T>& operator-=(const polynomial<T>& other);
     polynomial<T>& operator*=(const polynomial<T>& other);
     polynomial<T>& operator/=(const polynomial<T>& other);
+    polynomial<T>& operator%=(const polynomial<T>& other);
 
     polynomial<T>& operator+=(const T& data);
     polynomial<T>& operator-=(const T& data);
     polynomial<T>& operator*=(const T& data);
     polynomial<T>& operator/=(const T& data);
+    polynomial<T>& operator%=(const T& data);
 
-    T& operator[](std::size_t i) {return this->m_data[i];}
-    const T& operator[](std::size_t i) const {return this->m_data[i];}
+    T& operator[](std::size_t i) {return this->m_data.at(i);}
+    const T& operator[](std::size_t i) const {return this->m_data.at(i);}
 
     /**
      * @brief out stream
@@ -250,9 +321,11 @@ private:
     friend polynomial<U> karatsuba(polynomial<U>& rhs,
                                    polynomial<U>& lhs);
 
+    //TODO
     template<typename U>
-    friend polynomial<U> newton(const polynomial<U>& rhs,
-                                const polynomial<U>& lhs);
+    friend polynomial<U> newton(polynomial<U>& rhs,
+                                polynomial<U>& lhs);
+
 };
 
 template<typename U>
@@ -330,17 +403,18 @@ polynomial<U> karatsuba(polynomial<U>& lhs, polynomial<U>& rhs)
         polynomial<U> c_21 = c_2 + c_1;
         c_21.normalize();
         result = c_21 + c_0;
-        result.normalize();
+
+        return result;
     }
 }
-
+/*
 template<typename U>
 polynomial<U> newton(const polynomial<U>& rhs,
                      const polynomial<U>& lhs)
 {
 
 }
-
+*/
 template<typename U> bool operator==(const polynomial<U> &p_fr, const polynomial<U> &p_sc)
 {
     if(p_fr.size() != p_sc.size())
@@ -389,24 +463,30 @@ polynomial<T> polynomial<T>::operator+(const polynomial<T>& other) const
 
 template<typename T>
 polynomial<T> polynomial<T>::operator-(const polynomial<T>& other) const
-{return (*this) + (-other);}
+{
+    return (*this) + (-other);
+}
 
 template<typename T>
 polynomial<T> polynomial<T>::operator*(const polynomial<T> &other) const
 {
-
+    polynomial<T> result = karatsuba(*this, other);
+    result.normalize();
+    return result;
 }
 
 template<typename T>
 polynomial<T> polynomial<T>::operator/(const polynomial<T> &other) const
 {
-
+    pair_vec result = _pld(*this->m_data, other.m_data);
+    return polynomial(result.first);
 }
 
 template<typename T>
 polynomial<T> polynomial<T>::operator%(const polynomial<T>& other) const
 {
-
+    pair_vec result = _pld(*this->m_data, other.m_data);
+    return polynomial(result.second);
 }
 
 template<typename T>
@@ -418,75 +498,91 @@ polynomial<T> polynomial<T>::operator^(polynomial<T>& other) const
 template<typename T>
 polynomial<T> polynomial<T>::operator+(const T& data) const
 {
-
+    return (*this) + polynomial<T>(data);
 }
 
 template<typename T>
 polynomial<T> polynomial<T>::operator-(const T& data) const
 {
-
+    return (*this) - polynomial<T>(data);
 }
 
 template<typename T>
 polynomial<T> polynomial<T>::operator*(const T& data) const
 {
-
+    return (*this) - polynomial<T>(data);
 }
 
 template<typename T>
 polynomial<T> polynomial<T>::operator/(const T& data) const
 {
-
+    return (*this) / polynomial<T>(data);
 }
 
 template<typename T>
 polynomial<T> polynomial<T>::operator%(const T& data) const
 {
-
+    return (*this) / polynomial<T>(data);
 }
 
 template<typename T>
 polynomial<T>& polynomial<T>::operator+=(const polynomial<T>& other)
-{ return *this = *this + other; }
+{
+    return *this = *this + other;
+}
 
 template<typename T>
 polynomial<T>& polynomial<T>::operator-=(const polynomial<T>& other)
-{ return *this = *this - other; }
+{
+    return *this = *this - other;
+}
 
 template<typename T>
 polynomial<T>& polynomial<T>::operator*=(const polynomial<T>& other)
 {
-
+    return *this = *this * other;
 }
 
 template<typename T>
 polynomial<T>& polynomial<T>::operator/=(const polynomial<T>& other)
 {
+    return *this = *this / other;
+}
 
+template<typename T>
+polynomial<T>& polynomial<T>::operator%=(const polynomial<T>& other)
+{
+    return *this = *this % other;
 }
 
 template<typename T>
 polynomial<T>& polynomial<T>::operator+=(const T& data)
 {
-
+    return *this += polynomial<T>(data);
 }
 
 template<typename T>
 polynomial<T>& polynomial<T>::operator-=(const T& data)
 {
-
+    return *this -= polynomial<T>(data);
 }
 
 template<typename T>
 polynomial<T>& polynomial<T>::operator*=(const T& data)
 {
-
+    return *this *= polynomial<T>(data);
 }
 
 template<typename T>
 polynomial<T>& polynomial<T>::operator/=(const T& data)
 {
+    return *this /= polynomial<T>(data);
+}
 
+template<typename T>
+polynomial<T>& polynomial<T>::operator%=(const T& data)
+{
+    return *this %= polynomial(data);
 }
 
 } //adf
