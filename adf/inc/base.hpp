@@ -4,6 +4,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <iostream>
 #include <cstdint>
 #include <string>
 
@@ -44,6 +45,73 @@ std::string error(const std::string& err, const char* func, const char* file, in
 }
 
 #define ADF_ERROR(msg) error(msg, __FUNCTION__, __FILE__, __LINE__)
+/* errors */
+
+template <class T> T zero(T t)
+{
+    T result;
+    if(std::is_same<decltype(t), char>::value)
+    {
+        result = static_cast<char>(0);
+    }
+    else if(std::is_same<decltype(t), short>::value)
+    {
+        result = static_cast<short>(0);
+    }
+    else if(std::is_same<decltype(t), int>::value)
+    {
+        result = static_cast<int>(0);
+    }
+    else if(std::is_same<decltype(t), long>::value)
+    {
+        result = static_cast<long>(0);
+    }
+    else if(std::is_same<decltype(t), float>::value)
+    {
+        result = static_cast<float>(0.0);
+    }
+    else if(std::is_same<decltype(t), double>::value)
+    {
+        result = static_cast<double>(0.0);
+    }
+    else{
+        result = T() - T();
+    }
+    return result;
+}
+
+template<class T> T one(T t)
+{
+    T result;
+    if(std::is_same<decltype(t), char>::value)
+    {
+        result = static_cast<char>(1);
+    }
+    else if(std::is_same<decltype(t), short>::value)
+    {
+        result = static_cast<short>(1);
+    }
+    else if(std::is_same<decltype(t), int>::value)
+    {
+        result = static_cast<int>(1);
+    }
+    else if(std::is_same<decltype(t), long>::value)
+    {
+        result = static_cast<long>(1);
+    }
+    else if(std::is_same<decltype(t), float>::value)
+    {
+        result = static_cast<float>(1.0);
+    }
+    else if(std::is_same<decltype(t), double>::value)
+    {
+        result = static_cast<double>(1.0);
+    }
+    else{
+        std::cerr << " one() not implemented " << std::endl;
+    }
+    return result;
+}
 
 }
 
