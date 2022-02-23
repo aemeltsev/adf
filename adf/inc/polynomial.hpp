@@ -9,6 +9,7 @@
 #include <vector>
 #include <algorithm>
 #include <initializer_list>
+#include "base.hpp"
 
 namespace adf
 {
@@ -287,7 +288,7 @@ public:
     polynomial<T> operator/(const polynomial<T>& other) const;
     polynomial<T> operator%(const polynomial<T>& other) const;
 
-    polynomial<T> operator^(polynomial<T>& other) const;
+    polynomial<T> operator^(uint32_t n) const;
 
     polynomial<T> operator+(const T& data) const;
     polynomial<T> operator-(const T& data) const;
@@ -490,9 +491,16 @@ polynomial<T> polynomial<T>::operator%(const polynomial<T>& other) const
 }
 
 template<typename T>
-polynomial<T> polynomial<T>::operator^(polynomial<T>& other) const
+polynomial<T> polynomial<T>::operator^(uint32_t n) const
 {
-
+    polynomial<T> result(one<T>(T())), factor(*this);
+    while(n > 0)
+    {
+        if(n % 2 == 1) result *= factor;
+        factor *= factor;
+        n /= 2;
+    }
+    return result;
 }
 
 template<typename T>
