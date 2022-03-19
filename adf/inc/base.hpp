@@ -1,6 +1,7 @@
-/**
-  * License text...
-*/
+// Copyright (C) 2021-2022 Anthony Emeltsev
+// SPDX-License-Identifier: Apache-2.0
+//
+
 #ifndef COMMON_H
 #define COMMON_H
 

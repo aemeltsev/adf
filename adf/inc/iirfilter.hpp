@@ -1,6 +1,8 @@
-/**
-  * License text...
-*/
+// Copyright (C) 1994 Les Thede
+// Copyright (C) 2021-2022 Anthony Emeltsev
+// SPDX-License-Identifier: Apache-2.0
+//
+
 #ifndef DIGIIRFILTER_H
 #define DIGIIRFILTER_H
 

@@ -1,3 +1,7 @@
+// Copyright (C) 2021-2022 Anthony Emeltsev
+// SPDX-License-Identifier: Apache-2.0
+//
+
 #include "inc/polynomial.hpp"
 namespace adf
 {
