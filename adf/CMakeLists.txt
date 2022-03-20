@@ -1,3 +1,5 @@
+# Sources
+##################################################
 set(SOURCES
     inc/advmath.hpp
     inc/complex.hpp
@@ -13,46 +15,14 @@ set(SOURCES
     src/polynomial.cpp
     )
 
-#Declare library
-add_library(adf STATIC
-           ${SOURCES})
+# Targets
+##################################################
+add_library(${BIN} STATIC ${SOURCES})
+target_include_directories(${BIN} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${BIN} PUBLIC ${PROJECT_INCLUDE_DIRS})
+target_compile_features(${BIN} PUBLIC ${PROJECT_COMPILE_DEFINITIONS})
+set_target_properties(${BIN} PROPERTIES LINKER_LANGUAGE CXX)
 
-# Specify here the include directories exported
-# by this library
-target_include_directories(adf PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    #adf/inc
-    )
-#target_include_directories(adf PUBLIC
-    #${CMAKE_CURRENT_SOURCE_DIR}
-    #adf/src
-    #)
-target_compile_features(adf PUBLIC cxx_std_11)
-
-install(
-    TARGETS adf
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
- )
-
-
-
-# Add configs
-#configure_file(adfilter.pc.in adfilter.pc @ONLY)
-
-# Compiler settings
-#target_compile_features(${BIN} PUBLIC cxx_std_11)
-
-# Install and export the library
-#install(TARGETS adf
-#    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-#install(FILES ${CMAKE_BINARY_DIR}/adfilter.pc
-#    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
-
-##############################################
-## Add test
-enable_testing()
+# Add test
+##################################################
 add_subdirectory(test)
