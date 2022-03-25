@@ -23,7 +23,6 @@ class AnalogFilter
     std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
     std::vector<T> un_acoefs, un_bcoefs; /**< to unnormalise coefs */
 
-
     /**
      * @brief setFilterParam Filling data fields of the
      * @param g_passband - the passband gain ripple
