@@ -19,10 +19,12 @@ namespace adf {
  */
 enum class FilterType
 {
-    LPF=1, //Low-pass filter
-    HPF,   //High-pass filter
-    PBF,   //Band-pass filter
-    SBF    //Band-stop filter
+    UNDEF = 0, //Udefined filter type
+    LPF,       //Low-pass filter type
+    HPF,       //High-pass filter type
+    PBF,       //Band-pass filter type
+    SBF,       //Band-stop filter type
+    ERR        //Error
 };
 
 /**
@@ -30,10 +32,12 @@ enum class FilterType
  */
 enum class ApproxType
 {
-    BUTTER=1, //Butterworth approximation
-    CHEBY,    //Chebyshev approximation
-    ICHEBY,   //Inverse Chebyshev approximation
-    ELLIPT    //elliptic approximation
+    UNDEF = 0,  //Type of approximation is undefined
+    BUTTER,     //Butterworth approximation
+    CHEBY,      //Chebyshev approximation
+    ICHEBY,     //Inverse Chebyshev approximation
+    ELLIPT,     //elliptic approximation
+    ERR         //Error
 };
 
 /**
