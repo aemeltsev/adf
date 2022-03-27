@@ -18,22 +18,22 @@ To build adf you need using CMake.
 
 Adf contains the following C++ modules components:
 
-advmath Advanced mathematical methods.
-Contain hyperbolic, elliptic and other special methods which all other adf code depends on.
+* advmath Advanced mathematical methods.
+<br /> Contain hyperbolic, elliptic and other special methods which all other adf code depends on.
 
-anfilter Calculate of the analog active filters
+* anfilter Calculate of the analog active filters
 
-base Internal basic methods and definitions. Not used outside.
+* base Internal basic methods and definitions. Not used outside.
 
-complex Basic implementation class of the complex number.
+* complex Basic implementation class of the complex number.
 
-fft Fast Fourier transformation.
+* fft Fast Fourier transformation.
  
-fresp Calculate the frequency response of a filter using starting and stopping frequency.
+* fresp Calculate the frequency response of a filter using starting and stopping frequency.
 
-iirfilter Calculate of the digital iir-filter.
+* iirfilter Calculate of the digital iir-filter.
 
-polynomial Custom representation of the polynomial class.
+* polynomial Custom representation of the polynomial class.
 
 # License
 
@@ -44,8 +44,12 @@ The adf c++ library is licensed under the terms of the Apache license. See LICEN
 For more information about adf and methods for filter design, see:
 
 Les Thede - Practical analog and digital filter design.
+
 Hercules G. Dimopoulos - Analog Electronic Filters. Theory, Design and Synthesis.
+
 Wai-Kai Chen - Passive, Active, and Digital Filters.
+
 Gabor C. Temes - Modern Filter theory and design.
+
 Emmanual C. Ifeachor - Digital Signal Processing. A Practical Approach.
 
