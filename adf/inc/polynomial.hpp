@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include "base.hpp"
+#include "complex.hpp"
 
 namespace adf
 {
@@ -23,8 +24,13 @@ namespace adf
 template<typename T>
 class polynomial
 {
+
+    static constexpr double pi_23 = (2. * ADF_PI) / 3.;
+    const double srt_32 = std::sqrt(3.) / 2.;
+
     using vec = std::vector<T>;
     using vec_ref = std::vector<T>&;
+    using vec_comp_ref = std::vector<complex<T>>&;
     using pair_vec = std::pair<vec, vec>;
 
     vec m_data;
@@ -275,6 +281,8 @@ public:
     void padding(polynomial<T>& other) { _padding(*this, other); }
 
     void shift_pow10(std::size_t n) { _shift_pow10(n, this->m_data); }
+    int find_root(vec_ref re, vec_ref im) const;
+    int find_root(vec_comp_ref roots) const;
 
     /**
      * @brief overloaded operators
@@ -328,6 +336,29 @@ private:
     friend polynomial<U> newton(polynomial<U>& rhs,
                                 polynomial<U>& lhs);
 
+    int quadratic(const T& a, const T& b, const T& c,
+                  T& re1, T& im1,
+                  T& re2, T& im2) const;
+
+    int quadratic(const T& a, const T& b, const T& c,
+                  complex<T>& x1, complex<T>& x2) const;
+
+    int quadratic(const T& b, const T& c,
+                  T& re1, T& im1,
+                  T& re2, T& im2) const;
+
+    int quadratic(const T& b, const T& c,
+                  complex<T>& x1, complex<T>& x2) const;
+
+    int cubic(const T& a, const T& b, const T& c,
+              T& re1, T& im1,
+              T& re2, T& im2,
+              T& re3, T& im3) const;
+
+    int cubic(const T& a, const T& b, const T& c,
+              complex<T>& x1,
+              complex<T>& x2,
+              complex<T>& x3) const;
 };
 
 template<typename U>
@@ -409,6 +440,7 @@ polynomial<U> karatsuba(polynomial<U>& lhs, polynomial<U>& rhs)
         return result;
     }
 }
+
 /*
 template<typename U>
 polynomial<U> newton(const polynomial<U>& rhs,
@@ -417,6 +449,148 @@ polynomial<U> newton(const polynomial<U>& rhs,
 
 }
 */
+
+template<typename T>
+int polynomial<T>::quadratic(const T& a, const T& b, const T& c,
+                             T& re1, T& im1,
+                             T& re2, T& im2) const
+{
+    const T aa = (a + a);
+    const T det = (b * b) - (2 * aa * c);
+
+    if(det >= 0)
+    {
+        im1 = im2 = 0.;
+        const T sq_det = std::sqrt(det);
+        re1 = (-b + sq_det) / aa;
+        re2 = (-b - sq_det) / aa;
+        return ((det == 0.0f) ? 1 : 2);
+    }
+    else{
+        const T sq_det = std::sqrt(-det);
+        re1 = re2 = -b / aa;
+        im1 = sq_det;
+        im2 = -sq_det;
+    }
+    return 0;
+}
+
+template<typename T>
+int polynomial<T>::quadratic(const T& a, const T& b, const T& c,
+                             complex<T>& x1, complex<T>& x2) const
+{
+    const complex<T> det = b * b - 4 * a * c;
+    const complex<T> q = -0.5 * (b + sgn(b) * std::sqrt(det));
+    x1 = q/a;
+    x2 = c/q;
+
+    return (det < 0.0) ? 0 : ((det == 0.0) ? 1 : 2);
+}
+
+template<typename T>
+int polynomial<T>::quadratic(const T& b, const T& c,
+                             T& re1, T& im1,
+                             T& re2, T& im2) const
+{
+    const T hb = (b / 2.);
+    const T det = hb * hb - c;
+
+    if(det >= 0)
+    {
+        im1 = im2 = 0.0;
+        const T sq_det = std::sqrt(det);
+        re1 = -hb + sq_det;
+        re2 = -hb - sq_det;
+        return ((det == 0.0f) ? 1 : 2);
+    }
+    else {
+        const T sq_det = std::sqrt(-det);
+        re1 = re2 = -hb;
+        im1 = sq_det;
+        im2 = -sq_det;
+    }
+    return 0;
+}
+
+template<typename T>
+int polynomial<T>::quadratic(const T& b, const T& c,
+                             complex<T>& x1, complex<T>& x2) const
+{
+    const T det = b * b - 4 * c;
+    const complex<T> cc = -0.5 * (b + sgn(b) * std::sqrt(det));
+    x1 = cc;
+    x2 = c / cc;
+
+    return (det < 0.0) ? 0 : ((det == 0.0) ? 1 : 2);
+}
+
+template<typename T>
+int polynomial<T>::cubic(const T& a, const T& b, const T& c,
+                         T& re1, T& im1,
+                         T& re2, T& im2,
+                         T& re3, T& im3) const
+{
+    complex<T> x1, x2, x3;
+    int out = cubic(a, b, c, x1, x2, x3);
+
+    re1 = x1.getReal();  im1 = x1.getImag();
+    re2 = x2.getReal();  im2 = x2.getImag();
+    re3 = x3.getReal();  im3 = x3.getImag();
+
+    return out;
+}
+
+template<typename T>
+int polynomial<T>::cubic(const T& a, const T& b, const T& c,
+                         complex<T>& x1,
+                         complex<T>& x2,
+                         complex<T>& x3) const
+{
+    T tmp = (a * a);
+    const T q1 = ((tmp - 3.0 * b) / 9.0);
+    const T r1 = ((2.0 * tmp * a - 9.0 * a * b + 27.0 * c) / 54.0);
+    const T r2 = r1 * r1;
+    const T q2 = q1 * q1 * q1;
+    tmp = a / 3.0;
+
+    if(r2 < q2)
+    {
+        T q_sqrt = std::sqrt(q1);
+        const T theta = std::acos(r1 / (q1 * q_sqrt)) / 3.0;
+        q_sqrt *= -2.0;
+        x1 = q_sqrt * std::cos(theta ) - tmp;
+        x2 = q_sqrt * std::cos(theta + pi_23) - tmp;
+        x3 = q_sqrt * std::cos(theta - pi_23) - tmp;
+        return 3;
+    }
+    else {
+        constexpr double aa = -std::pow(r1 + sgn(r1) * std::sqrt(r2 - q2), 1.0 / 3.0);
+        T bb = 0.0;
+        if(aa != 0.0)
+        {
+            bb = q1 / aa;
+        }
+        const T apb = aa + bb;
+        const T amb = aa - bb;
+
+        x1 = apb - tmp;
+        x2 = complex<T>(-0.5 * apb - tmp, srt_32 * amb);
+        x3 = complex<T>(-0.5 * apb - tmp, -srt_32 * amb);
+
+        return 1;
+    }
+}
+
+template<typename T>
+int polynomial<T>::find_root(vec_ref re, vec_ref im) const
+{
+}
+
+template<typename T>
+int polynomial<T>::find_root(vec_comp_ref roots) const
+{
+}
+
 template<typename U> bool operator==(const polynomial<U> &p_fr, const polynomial<U> &p_sc)
 {
     if(p_fr.size() != p_sc.size())

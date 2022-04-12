@@ -114,6 +114,10 @@ template<class T> T one(T t)
     return result;
 }
 
+template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
 }
 
 #endif //COMMON_H
