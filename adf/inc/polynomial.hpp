@@ -30,6 +30,7 @@ class polynomial
 
     using vec = std::vector<T>;
     using vec_ref = std::vector<T>&;
+    using vec_comp = std::vector<complex<T>>;
     using vec_comp_ref = std::vector<complex<T>>&;
     using pair_vec = std::pair<vec, vec>;
 
@@ -281,8 +282,8 @@ public:
     void padding(polynomial<T>& other) { _padding(*this, other); }
 
     void shift_pow10(std::size_t n) { _shift_pow10(n, this->m_data); }
-    int find_root(vec_ref re, vec_ref im) const;
-    int find_root(vec_comp_ref roots) const;
+    int roots(vec_ref re, vec_ref im) const;
+    int roots(vec_comp_ref roots) const;
 
     /**
      * @brief overloaded operators
@@ -359,6 +360,15 @@ private:
               complex<T>& x1,
               complex<T>& x2,
               complex<T>& x3) const;
+
+    int laguerre(const vec_comp_ref poly,
+                 const std::size_t degree,
+                         complex<T>& root) const;
+
+    int find_roots(const vec_ref poly,
+                   vec_comp_ref roots,
+                   const bool polish = true) const;
+
 };
 
 template<typename U>
@@ -582,12 +592,50 @@ int polynomial<T>::cubic(const T& a, const T& b, const T& c,
 }
 
 template<typename T>
-int polynomial<T>::find_root(vec_ref re, vec_ref im) const
+int polynomial<T>::roots(vec_ref re, vec_ref im) const
 {
+    const std::size_t indx = m_data.size() - 1;
+    re.resize(indx, zero(T()));
+    im.resize(indx, zero(T()));
+
+    switch(indx)
+    {
+    case 1:
+        re.at(0) = -m_data.at(0)/m_data.at(1);
+        im.at(0) = 0.;
+        return 1;
+    case 2:
+        return quadratic(m_data.at(2), m_data.at(1), m_data.at(0),
+                         re.at(0), im.at(0),
+                         re.at(1), im.at(1));
+    case 3:
+        if(m_data.at(3) == zero(T()))
+        {
+            return quadratic(m_data.at(2), m_data.at(1), m_data.at(0),
+                             re.at(0), im.at(0),
+                             re.at(1), im.at(1));
+        } else {
+            return cubic(m_data.at(2)/m_data.at(3), m_data.at(1)/m_data.at(3), m_data.at(0)/m_data.at(3),
+                         re.at(0), im.at(0),
+                         re.at(1), im.at(1),
+                         re.at(2), im.at(2));
+        }
+        break;
+    default:
+        vec_comp roots_out;
+        int out = find_roots(m_data, roots_out);
+        for(auto i=0; i<roots_out.size(); ++i)
+        {
+            re.at(i) = roots_out.at(i).getReal();
+            im.at(i) = roots_out.at(i).getImag();
+        }
+        return out;
+    }
+    return -1;
 }
 
 template<typename T>
-int polynomial<T>::find_root(vec_comp_ref roots) const
+int polynomial<T>::roots(vec_comp_ref roots) const
 {
 }
 
