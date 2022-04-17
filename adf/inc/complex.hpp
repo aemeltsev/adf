@@ -58,6 +58,8 @@ public:
      */
     T getReal() const {return m_re;}
     T getImag() const {return m_im;}
+    void setReal(T val) {m_re = val;}
+    void setImag(T val) {m_im = val;}
 
     //math methods
     //conj() - returns complex conj of complex number

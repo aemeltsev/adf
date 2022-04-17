@@ -13,6 +13,10 @@
 #include "base.hpp"
 #include "complex.hpp"
 
+#define MR 8             //number of different fractional values to break (rare) limit cycles
+#define MT 10            //number of steps to break (rare) limit cycles
+#define MAX_IT (MT * MR) //maximal number of iterations
+
 namespace adf
 {
 
@@ -24,7 +28,6 @@ namespace adf
 template<typename T>
 class polynomial
 {
-
     static constexpr double pi_23 = (2. * ADF_PI) / 3.;
     const double srt_32 = std::sqrt(3.) / 2.;
 
@@ -361,11 +364,11 @@ private:
               complex<T>& x2,
               complex<T>& x3) const;
 
-    int laguerre(const vec_comp_ref poly,
+    int laguerre(vec_comp_ref poly,
                  const std::size_t degree,
                          complex<T>& root) const;
 
-    int find_roots(const vec_ref poly,
+    int find_roots(vec_ref poly,
                    vec_comp_ref roots,
                    const bool polish = true) const;
 
@@ -592,6 +595,148 @@ int polynomial<T>::cubic(const T& a, const T& b, const T& c,
 }
 
 template<typename T>
+int polynomial<T>::laguerre(vec_comp_ref poly,
+                            const std::size_t degree,
+                            complex<T>& root) const
+{
+    static const double epsilon = std::numeric_limits<double>::epsilon();
+
+    T absx, absp, absm, err;
+    complex<T> dx, x1, b, d, f, g, h, sq, gp, gm, g2;
+
+    static const double frac[] = {0, 0.5, 0.25, 0.75, 0.125, 0.375, 0.625, 0.875, 1.};
+
+    const int mm1 = degree - 1;
+    int it;
+
+    for(it = 1; it <= MAX_IT; ++it)
+    {
+        b = poly.at(degree);
+        err = abs(b);
+        absx = abs(root);
+
+        for(auto j = mm1; j >=0; --j)
+        {
+            f = root * f + d;
+            d = root * d + b;
+            b = root * b + poly.at(j);
+            err = b.abs() + absx * err;
+        }
+
+        err *= epsilon;
+
+        if(abs(b) < err) return it;
+
+        //Laguerre method
+        g = b / b; // G(x_k) = P'(x_k) / P(x_k). ([1], eq. 7.10)
+        g2 = g * g;
+        h = g2 - 2. * f / b; // H(x_k) = G(x_k)^2 - (P''(x_k)/P(x_k)). ([1], eq. 7.11)
+
+        auto tmp = static_cast<T>(mm1) * complex<T>(static_cast<T>(degree)) * h - g2;
+        sq = sqrt(tmp);
+        gp = g + sq;
+        gm = g - sq;
+        absp = abs(gp);
+        absm = abs(gm);
+
+        if(absp < absm) gp = gm;
+
+        auto cdegree = complex<T>(static_cast<T>(degree)) / gp;
+        auto cabsx = (1. + absx) * complex<T>(std::cos(T(it)), std::sin(T(it)));
+        dx = ((std::max(absp, absm) > 0.0) ? cdegree : cabsx);
+        x1 = root - dx;
+
+        if(root == x1) return it;
+
+        if((it % MT) != 0)
+        {
+            root = x1;
+        }
+        else {
+            root = root - frac[it / MT] * dx;
+        }
+    }
+    return it;
+}
+
+template<typename T>
+int polynomial<T>::find_roots(vec_ref poly,
+                              vec_comp_ref roots,
+                              const bool polish) const
+{
+    auto vec_fill = [&](vec_ref other) -> vec_comp
+    {
+        vec_comp out;
+        out.resize(other.size(), complex<T>(0., 0.));
+
+        typename vec::const_iterator it, eit;
+        typename vec_comp::iterator dit;
+
+        for(it = other.begin(), dit = out.begin(), eit = other.end();
+            it!=eit; ++it, ++eit)
+        {
+            (*dit).setReal(static_cast<T>(*it));
+        }
+        return out;
+    };
+
+    static const double epsilon = std::numeric_limits<double>::epsilon();
+
+    const int degree = poly.size() - 1;
+    roots.resize(degree);
+
+    vec_comp ad = vec_fill(poly);
+
+    int i, its, j, jj;
+    complex<T> x, b, c;
+
+    for(j = degree; j >= 1; --j)
+    {
+        laguerre(ad, j, x);
+
+        if(std::abs(x.getImag()) <= 2. * epsilon * std::abs(x.getReal()))
+        {
+            x = complex<T>(x.getReal(), 0);
+        }
+
+        roots.at(j - 1) = x;
+
+        b = ad.at(j);
+        for(jj = j-1; jj >= 0; --jj)
+        {
+            c = ad.at(jj);
+            ad.at(jj) = b;
+            b = (x * b) + c;
+        }
+    }
+
+    if(polish)
+    {
+        ad = vec_fill(poly);
+        for(j = 0; j < degree; ++j)
+        {
+            laguerre(ad, degree, roots[j]);
+        }
+    }
+
+    its = (roots.at(0).getImag() == 0.0) ? 1 : 0;
+    for(j = 1; j < degree; ++j)
+    {
+        x = roots.at(j);
+        if(x.getImag() == 0.0) its++;
+
+        for(i = j - 1; i >= 0; --i)
+        {
+            if(roots.at(i).getReal() <= x.getReal()) break;
+
+            roots.at(i + 1) = roots.at(i);
+        }
+        roots.at(i + 1) = x;
+    }
+    return its;
+}
+
+template<typename T>
 int polynomial<T>::roots(vec_ref re, vec_ref im) const
 {
     const std::size_t indx = m_data.size() - 1;
@@ -637,6 +782,7 @@ int polynomial<T>::roots(vec_ref re, vec_ref im) const
 template<typename T>
 int polynomial<T>::roots(vec_comp_ref roots) const
 {
+
 }
 
 template<typename U> bool operator==(const polynomial<U> &p_fr, const polynomial<U> &p_sc)

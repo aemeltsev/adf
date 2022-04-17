@@ -1,4 +1,4 @@
-// Copyright (C) 2021-2022 Anthony Emeltsev
+﻿// Copyright (C) 2021-2022 Anthony Emeltsev
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -52,6 +52,18 @@ inline std::pair<complex<T>, complex<T>> quadr(
     fr_root = pb_tmp + sq_var; /**< for first root */
     sc_root = pb_tmp - sq_var; /**< for second root */
     return std::make_pair(fr_root/a2_var, sc_root/a2_var);
+}
+
+template<typename T>
+T abs(const complex<T> other)
+{
+    T out, re, im;
+    re = std::abs(other.getReal());
+    im = std::abs(other.getImag());
+    out = std::min(re, im);
+    re = std::max(re, im);
+    out /= re;
+    return re * std::sqrt(1. + out * out);
 }
 
 }
