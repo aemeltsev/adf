@@ -29,6 +29,7 @@ if(BUILD_TESTS)
     set(TESTS
         adftest.hpp
         polytest.hpp
+        comptest.hpp
         main.cpp)
 
     add_executable(adf_test ${TESTS})
