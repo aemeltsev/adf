@@ -782,7 +782,31 @@ int polynomial<T>::roots(vec_ref re, vec_ref im) const
 template<typename T>
 int polynomial<T>::roots(vec_comp_ref roots) const
 {
+    const std::size_t indx = m_data.size() - 1;
+    roots.resize(indx, complex<T>(0., 0.));
 
+    switch(indx)
+    {
+    case 1:
+        roots.at(0) = complex<T>(-m_data.at(0) / m_data.at(1));
+        return 1;
+    case 2:
+        return quadratic(m_data.at(2), m_data.at(1), m_data.at(0),
+                         roots.at(0), roots.at(1));
+    case 3:
+        if(m_data.at(3) == 0.0)
+        {
+            return quadratic(m_data.at(2), m_data.at(1), m_data.at(0),
+                             roots.at(0), roots.at(1));
+        } else {
+            return cubic(m_data.at(2) / m_data.at(3), m_data.at(1) / m_data.at(3), m_data.at(0) / m_data.at(3),
+                         roots.at(0), roots.at(1), roots.at(2));
+        }
+        break;
+    default:
+        return find_roots(m_data, roots);
+    }
+    return -1;
 }
 
 template<typename U> bool operator==(const polynomial<U> &p_fr, const polynomial<U> &p_sc)
