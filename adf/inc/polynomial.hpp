@@ -259,6 +259,16 @@ public:
         }
         return (*this);
     }
+
+    /**
+     * @brief operator = assignment operator
+     * @param data initialize polynomial with with one data element
+     * @return
+     */
+    polynomial<T> &operator=(const T& data)
+    {
+        return *this = polynomial<T>(data);
+    }
     
     void normalize() { _normalize(m_data); }
 
@@ -267,6 +277,19 @@ public:
     std::size_t size() const {return m_data.size();}
 
     bool empty() { return size() == 0;}
+
+    std::size_t order()
+    {
+        return m_data.size() - 1;
+    }
+
+    polynomial<T> reverse()
+    {
+        polynomial<T> tmp(*this);
+        _reverse(tmp.data);
+        m_reversed = true;
+        return tmp;
+    }
 
     polynomial<T> unreverse()
     {
@@ -454,14 +477,42 @@ polynomial<U> karatsuba(polynomial<U>& lhs, polynomial<U>& rhs)
     }
 }
 
-/*
 template<typename U>
 polynomial<U> newton(const polynomial<U>& rhs,
                      const polynomial<U>& lhs)
 {
+    U two = one(U()) + one(U());
+    polynomial<U> g = one(U());
+    polynomial<U> f = lhs;
 
+    auto n = (rhs.empty()) ? 0 : rhs.order();
+    auto m = (lhs.empty()) ? 0 : lhs.order();
+
+    int i, j, r;
+
+    if(n < m) return polynomial<U>(zero(U()));
+
+    U lc = (lhs.empty()) ? one(U()) : lhs.m_data.front();
+    U lci = one(U()) / lc;
+    f *= lci;
+
+    n = n - m + 1;
+    r = 0;
+    j = 1;
+    while(j < n) {r++; j *= 2;}
+
+    for(i = 1, j = 2; i <= r; i++, j *= 2)
+    {
+        g *= (two - g * f);
+        while(!g.empty() && g.order() >= j)
+            g.m_data.pop_front();
+    }
+
+    polynomial<U> result = (rhs.reverse()) * g * lci;
+    while(!result.empty() && result.order() >= n)
+        result.m_data.pop_front();
+    return result.reverse();
 }
-*/
 
 template<typename T>
 int polynomial<T>::quadratic(const T& a, const T& b, const T& c,

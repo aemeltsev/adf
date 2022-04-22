@@ -39,16 +39,16 @@ Adf contains the following C++ modules components:
 
 The adf c++ library is licensed under the terms of the Apache license. See LICENSE for more information.
 
-# Links
+# References
 
 For more information about adf and methods for filter design, see:
 
-Les Thede - Practical analog and digital filter design.
+Practical Analog and Digital Filter Design, Artech House, *L. Thede*
 
-Hercules G. Dimopoulos - Analog Electronic Filters. Theory, Design and Synthesis.
+Analog Electronic Filters. Theory, Design and Synthesis, 2012th ed. Springer, *H.G. Dimopoulos*
 
-Wai-Kai Chen - Passive, Active, and Digital Filters.
+Passive, Active, and Digital Filters, 2nd ed. CRC Press, *Wai-Kai Chen*
 
-Gabor C. Temes - Modern Filter theory and design.
+Modern Filter theory and design, John Wiley & Sons, *G. C. Temes*
 
-Emmanual C. Ifeachor - Digital Signal Processing. A Practical Approach.
+Digital Signal Processing. A Practical Approach, 2nd ed. Prentice Hall, *E. C. Ifeachor*
