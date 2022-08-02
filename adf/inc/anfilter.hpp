@@ -9,8 +9,8 @@
 #include "genfilter.hpp"
 
 namespace adf {
-/**
- * @class AnalogFilter
+/*!
+ * \class AnalogFilter
  */
 template<typename T=double>
 class AnalogFilter
@@ -20,17 +20,17 @@ class AnalogFilter
     FilterType m_ftype;
     ApproxType m_atype;
     std::size_t m_order = 0;
-    std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
-    std::vector<T> un_acoefs, un_bcoefs; /**< to unnormalise coefs */
+    std::vector<T> n_acoefs, n_bcoefs; /*!< to normalise coefs */
+    std::vector<T> un_acoefs, un_bcoefs; /*!< to unnormalise coefs */
 
-    /**
-     * @brief setFilterParam Filling data fields of the
-     * @param g_passband - the passband gain ripple
-     * @param g_stopband - the stopband gain ripple
-     * @param f_passband - the passband edge frequency
-     * @param f_stopband - the stopband edge frequency
-     * @param fsamp - sample frequency
-     * @param gain - gain miltiplier
+    /*!
+     * \brief setFilterParam Filling data fields of the
+     * \param g_passband - the passband gain ripple
+     * \param g_stopband - the stopband gain ripple
+     * \param f_passband - the passband edge frequency
+     * \param f_stopband - the stopband edge frequency
+     * \param fsamp - sample frequency
+     * \param gain - gain miltiplier
      */
     void setFilterParam(FiltParam<T>& other)
     {
@@ -43,12 +43,12 @@ class AnalogFilter
         m_fparam.gain = other.gain;
     }
 
-    /**
-     * @brief FillZeroCoeffs - Filling normalized vectors with default values
-     * @param avec input reference to vector of "a" coefficients for filling
-     * @param bvec input reference to vector of "b" coefficients for filling
-     * @param num the order
-     * @return bool variable, success if order value not out of range
+    /*!
+     * \brief FillZeroCoeffs - Filling normalized vectors with default values
+     * \param avec input reference to vector of "a" coefficients for filling
+     * \param bvec input reference to vector of "b" coefficients for filling
+     * \param num the order
+     * \return bool variable, success if order value not out of range
      */
     bool FillZeroCoeffs(std::vector<T>& avec, std::vector<T>& bvec, std::size_t num)
     {
@@ -89,8 +89,8 @@ public:
         m_order = m_calccoeffs->getFilterOrder();
     }
 
-    /**
-     * @brief NormalizeCoefficients - Calculation and filling the vectors of coefficients depending on the approximation method
+    /*!
+     * \brief NormalizeCoefficients - Calculation and filling the vectors of coefficients depending on the approximation method
      */
     void NormalizeCoefficients()
     {
@@ -118,8 +118,8 @@ public:
         }
     }
 
-    /**
-     * @brief
+    /*!
+     * \brief
      */
     void DenormalizeCoefficients()
     {
