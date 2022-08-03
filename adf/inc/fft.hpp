@@ -26,9 +26,9 @@ private:
     int *m_permindex;
 
     /*!
-     * \brief swap
-     * \param a
-     * \param b
+     * \brief swap - Helper method for swapping two complex values
+     * \param a - complex value
+     * \param b - complex value
      */
     inline void swap(complex<T> &a, complex<T> &b)
     {
@@ -36,8 +36,11 @@ private:
     }
 
     /*!
-     * \brief Setup
-     * \param size
+     * \brief Setup - Helper method for checking that the size of the array
+     *                of samples is not zero and equal to the power of 2.
+     *                Also, the initialization of the array of rotation factors
+     *                and the array of indices for permutations
+     * \param size - size of samples array
      */
     void Setup(int size)
     {
@@ -80,7 +83,7 @@ private:
         if(!(m_permindex = new int[size])) ADF_ERROR("Error in FFT::Setup ErrNoMem");
 
         m_permindex[0] = 0;
-        int m,n;    /*!< The following code relies heavily on size == 2^log2vecsize */
+        int m, n;    /*!< The following code relies heavily on size == 2^log2vecsize */
         for(k = 1, n = (size >> 1); k < size; ++k)
         {
             //! At each step, n is bit-reversed pattern of k.
@@ -99,8 +102,8 @@ private:
     }
 
     /*!
-     * \brief Permute
-     * \param vec
+     * \brief Permute - initial permutation
+     * \param vec - initial array of the samples
      */
     void Permute(complex<T> *vec)
     {
@@ -121,7 +124,7 @@ private:
      *                         So this routine just makes use of ordinary type "double" variables,
      *                         and assumes each Complex variable is actually two consecutive double variables.
 
-     * \param vec
+     * \param vec - initial array of the samples
      */
     void BaseDIFForward(complex<T> *vec)
     {
@@ -264,7 +267,7 @@ private:
     /*!
      * \brief BaseDITInverse - In-place inverse FFT using Decimation in Time technique,
      *                         without reshuffling of indices.
-     * \param vec
+     * \param vec - initial array of the samples
      */
     void BaseDITInverse(complex<T> *vec)
     {
@@ -423,7 +426,7 @@ private:
 public:
 
     /*!
-     * \brief FFT
+     * \brief ctor
      */
     FFT()
     {
@@ -433,7 +436,7 @@ public:
     }
 
     /*!
-     * \brief dtor using helpler method for release memory
+     * \brief dtor using helper method for release memory
      */
     ~FFT()
     {
@@ -441,10 +444,11 @@ public:
     }
 
     /*!
-     * \brief ForwardDecFreq
-     * \param size
-     * \param vec
-     * \param divisor
+     * \brief ForwardDecFreq - Forward decimation in frequency fft algorithm
+     * \param size - size of samples array
+     * \param vec - initial array of the samples
+     * \param divisor - so to normalise (in any sense) the output data you need to multiply it by 1/N
+     *
      */
     void ForwardDecFreq(int size, complex<T> *vec, T divisor=0.)
     {
@@ -460,10 +464,10 @@ public:
     }
 
     /*!
-     * \brief InverseDecTime
-     * \param size
-     * \param vec
-     * \param divisor
+     * \brief InverseDecTime - Inverse decimation in time fft algorithm
+     * \param size - size of samples array
+     * \param vec - initial array of the samples
+     * \param divisor - so to normalise (in any sense) the output data you need to multiply it by 1/N
      */
     void InverseDecTime(int size, complex<T> *vec, T divisor=0.)
     {
@@ -479,7 +483,7 @@ public:
     }
 
     /*!
-     * \brief ReleaseMemory
+     * \brief ReleaseMemory - clean allocated memory
      */
     void ReleaseMemory()
     {
@@ -497,28 +501,35 @@ public:
     }
 };
 
+/*!
+ *
+ */
 template<typename T = double>
 class FFTR2D
 {
 private:
-    // Relative speed of ForwardCR
-    // as compared to ForwardRC.  If bigger than 1, then ForwardCR is
+    // Relative speed of ForwardCR as compared to ForwardRC.
+    // If bigger than 1, then ForwardCR is
     // faster.  This will be machine & compiler dependent...oh well.
     static constexpr double m_crrc_speed_ratio = 1.10;
 
-    int m_vec_size1, m_vec_size2; // Dimensions of full-sized real array.
-    int m_log_size1, m_log_size2; // Base-2 logs of vecsize1 & vecsize2
-                                  // (which *must* be powers of 2).
-    // The corresponding MyComplex array is only half-height, i.e.,
-    // is (vecsize1/2)+1 rows by vecsize2 columns.
+    int m_vec_size1, m_vec_size2; /*!< Dimensions of full-sized real array.*/
+    int m_log_size1, m_log_size2; /*!< Base-2 logs of m_vec_size1 & m_vec_size2 */
+                                  /*!< (which *must* be powers of 2).*/
+                                  /*!< The corresponding MyComplex array is only half-height, i.e., */
+                                  /*!< is (m_vec_size1 / 2) + 1 rows by m_vec_size2 columns. */
     FFT<T> m_fft1, m_fft2;
     complex<T> *m_scratcha;
-    complex<T> *m_scratchb; // Secondary scratch space; same size as 'scratch'.
-    // The main use of scratchb is to slightly block memory accesses
-    // having bad strides.
-    complex<T> **m_work_arr; // Used only by inverse FFT routines
+    complex<T> *m_scratchb;  /*!< Secondary scratch space; same size as 'scratch'. */
+                             /*!< The main use of m_scratchb is to slightly block memory accesses */
+                             /*!< having bad strides. */
+    complex<T> **m_work_arr; /*!< Used only by inverse FFT routines */
 
 public:
+
+    /*!
+     * \brief ReleaseMemory
+     */
     void ReleaseMemory()
     {
         if(m_vec_size1 == 0 || m_vec_size2 == 0) return;
@@ -543,20 +554,24 @@ public:
     }
 
 private:
+
+    /*!
+     * \brief Setup
+     * \param size1
+     * \param size2
+     */
     void Setup(int size1, int size2)
     {
-        // Note: This routine is also called by FFTReal2D::SetupInverse()
-        if(size1 == m_vec_size1 && size2 == m_vec_size2) return;  // Nothing to do
+        if(size1 == m_vec_size1 && size2 == m_vec_size2) return;  /*!< Nothing to do */
 
-        // Release memory on size=0 request
+        //! Release memory on size = 0 request.
         if(size1 == 0 || size2 == 0)
         {
             ReleaseMemory();
             return;
         }
 
-        // Check that sizes are powers of 2, and > 1.  Also extract
-        // base-2 log of sizes
+        //! Check that sizes are powers of 2, and > 1. Also extract base-2 log of sizes.
         if(size1 < 2 || size2 < 2) ADF_ERROR("Error in FFTReal2D::Setup(int): Requested size1 or size2 must be >=2");
 
         int k;
@@ -571,7 +586,7 @@ private:
                 ADF_ERROR("Error in FFTReal2D::Setup(int): Requested size2 is not a power of 2");
         }
 
-        // Allocate new space
+        //! Allocate new space.
         ReleaseMemory();
         m_scratcha = new complex<T>[std::max(size1, size2)];
         m_scratchb = new complex<T>[std::max(size1, size2)];
@@ -579,10 +594,15 @@ private:
         m_vec_size2 = size2;
     }
 
+    /*!
+     * \brief SetupInverse
+     * \param size1
+     * \param size2
+     */
     void SetupInverse(int size1, int size2)
     {
         if(size1 == m_vec_size1 && size2 == m_vec_size2 && m_work_arr != nullptr)
-            return;  // Nothing to do
+            return;  /*!< Nothing to do */
 
         Setup(size1,size2);
 
@@ -601,15 +621,19 @@ private:
         }
     }
 
-    // Routine ForwardCR does an FFT first on the columns, then on the
-    // rows, conversely, ForwardRC does an FFT first on the rows, and
-    // then on the columns.  The subsequent 2 'Inverse FFT' functions are
-    // analogous.  It is natural to pair ForwardCR with InverseRC, and
-    // ForwardRC with InverseCR (especially if the order has been chosen
-    // to get maximum speed-up benefit from zero-padding structure.
-    // The routine choice is made automatically (based on speed estimates)
-    // by the routines ::Forward & ::Inverse (below in the "public"
-    // access block).
+    /*!
+     * \brief ForwardCR - Routine ForwardCR does an FFT first on the columns,
+     *                    then on the rows. It is natural to pair ForwardCR with InverseRC.
+     *                    The routine choice is made automatically
+     *                    (based on speed estimates)by the routines ::Forward &
+     *                    ::Inverse (below in the "public" access block).
+     * \param rsize1
+     * \param rsize2
+     * \param rarr
+     * \param csize1
+     * \param csize2
+     * \param carr
+     */
     void ForwardCR(int rsize1,
                    int rsize2,
                    const double* const* rarr,
@@ -617,41 +641,41 @@ private:
                    int csize2,
                    complex<T>** carr)
     {
-        Setup(2 * (csize1 - 1), csize2); // Safety
-        if(m_vec_size1 == 0 || m_vec_size2 == 0) return; // Nothing to do
+        Setup(2 * (csize1 - 1), csize2); /*!< Safety */
+        if(m_vec_size1 == 0 || m_vec_size2 == 0) return; /*!< Nothing to do */
 
         int i, j;
         double x1, x2, y1, y2;
         double xb1, xb2, yb1, yb2;
 
-        // Do FFT on columns, 2 at a time
+        //! Do FFT on columns, 2 at a time.
         for(j = 0; j + 3 < rsize2; j += 4)
         {
-            // Pack into MyComplex scratch array
+            //! Pack into complex<T> scratch array.
             for(i = 0; i < rsize1; ++i)
             {
                 m_scratcha[i] = complex<T>(rarr[i][j],     rarr[i][j + 1]);
                 m_scratchb[i] = complex<T>(rarr[i][j + 2], rarr[i][j + 3]);
             }
 
-            // Zero pad scratch space
+            //! Zero pad scratch space.
             for(i = rsize1; i < m_vec_size1; ++i) m_scratcha[i] = complex<T>(0., 0.);
             for(i = rsize1; i < m_vec_size1; ++i) m_scratchb[i] = complex<T>(0., 0.);
 
-            // Do complex FFT
+            //! Do complex FFT.
             m_fft1.ForwardDecFreq(m_vec_size1, m_scratchb);
             m_fft1.ForwardDecFreq(m_vec_size1, m_scratcha);
 
-            // Unpack into top half of 2D complex array
-            // Rows 0 & vecsize1/2 are real-valued, so pack them together
-            // into row 0 (row 0 as real part, row vecsize1/2 as imag. part).
+            //! Unpack into top half of 2D complex array.
+            //! Rows 0 & m_vec_size1 / 2 are real-valued, so pack them together
+            //! into row 0 (row 0 as real part, row m_vec_size1 / 2 as imag. part).
             carr[0][j    ] = complex<T>(m_scratcha[0].getReal(), m_scratcha[m_vec_size1 / 2].getReal());
             carr[0][j + 1] = complex<T>(m_scratcha[0].getImag(), m_scratcha[m_vec_size1 / 2].getImag());
             carr[0][j + 2] = complex<T>(m_scratchb[0].getReal(), m_scratchb[m_vec_size1 / 2].getReal());
             carr[0][j + 3] = complex<T>(m_scratchb[0].getImag(), m_scratchb[m_vec_size1 / 2].getImag());
 
             for(i = 1; i < m_vec_size1 / 2; ++i)
-            { // ASSUMES vecsize1 is even!
+            { //! ASSUMES vecsize1 is even!
                 x1 = m_scratcha[i].getReal() / 2;
                 y1 = m_scratcha[i].getImag() / 2;
 
@@ -671,10 +695,10 @@ private:
             }
         }
 
-        // Case rsize2 not divisible by 4
+        //! Case rsize2 not divisible by 4.
         for(; j < rsize2; j += 2)
         {
-            // Pack into complex scratch array
+            //! Pack into complex scratch array.
             if(j + 1 < rsize2)
             {
                 for(i = 0; i < rsize1; ++i)
@@ -682,7 +706,7 @@ private:
                     m_scratcha[i] = complex<T>(rarr[i][j], rarr[i][j + 1]);
                 }
             }
-            else { // rsize2 == 1 mod 2.
+            else { //! rsize2 == 1 mod 2.
                 for(i = 0; i < rsize1; ++i)
                 {
                     m_scratcha[i] = complex<T>(rarr[i][j], 0.);
@@ -699,7 +723,7 @@ private:
                                         m_scratcha[m_vec_size1/2]->getImag());
 
             for(i = 1; i < m_vec_size1 / 2; ++i)
-            { // ASSUMES vecsize1 is even!
+            { //! ASSUMES vecsize1 is even!
                 x1 = m_scratcha[i]->getReal() / 2;
                 y1 = m_scratcha[i]->getImag() / 2;
 
@@ -711,7 +735,7 @@ private:
             }
         }
 
-        // Zero-pad remaining columns
+        //! Zero-pad remaining columns.
         if(rsize2 < csize2)
         {
             for(i = 0; i < csize1; ++i) {
@@ -719,14 +743,12 @@ private:
                     carr[i][j] = complex<T>(0., 0.);
                 }
             }
-            // Note: One _may_ be able to gain a few percent speedup
-            //       by using the 'memcpy' C-library routine.
         }
 
-        // Do FFT on top half of rows
+        //! Do FFT on top half of rows.
         for(i = 0; i < csize1 - 1; ++i) m_fft2.ForwardDecFreq(csize2, carr[i]);
 
-        // Pull out row 0 & row csize1-1 from (packed) row 0
+        //! Pull out row 0 & row csize1-1 from (packed) row 0.
         carr[csize1 - 1][0] = complex<T>(carr[0][0]->getImag(), 0.);
         carr[0][0]          = complex<T>(carr[0][0]->getReal(), 0.);
 
@@ -751,101 +773,193 @@ private:
         carr[0][csize2 / 2]          = complex<T>(carr[0][csize2 / 2]->getReal(), 0.);
     }
 
-    void ForwardRC(int rsize1, int rsize2,
+    /*!
+     * \brief ForwardRC - Routine ForwardRC does an FFT first on the rows,
+     *                    and then on the columns. It is natural to pair ForwardRC with InverseCR
+     *                    The routine choice is made automatically
+     *                    (based on speed estimates)by the routines ::Forward &
+     *                    ::Inverse (below in the "public" access block).
+     * \param rsize1
+     * \param rsize2
+     * \param rarr
+     * \param csize1
+     * \param csize2
+     * \param carr
+     */
+    void ForwardRC(int rsize1,
+                   int rsize2,
                    const double* const* rarr,
-                   int csize1, int csize2, complex<T>** carr)
+                   int csize1,
+                   int csize2,
+                   complex<T>** carr)
     {
-        Setup(2*(csize1-1),csize2); // Safety
-        if(vecsize1==0 || vecsize2==0) return; // Nothing to do
+        Setup(2 * (csize1 - 1), csize2); /*!< Safety */
+        if(m_vec_size1 == 0 || m_vec_size2 == 0) return; /*!< Nothing to do */
 
-        int i,j;
-        double x1,x2,y1,y2;
-        double xb1,xb2,yb1,yb2;
+        int i, j;
+        double x1, x2, y1, y2;
+        double xb1, xb2, yb1, yb2;
 
-        // Do row FFT's
-        for(i=0;i+1<rsize1;i+=2) {
-          // Pack 'MyComplex' row
-          for(j=0;j<rsize2;j++)
-            carr[i/2][j]=MyComplex(rarr[i][j],rarr[i+1][j]);
-          for(j=rsize2;j<csize2;j++) carr[i/2][j]=MyComplex(0.,0.); // Zero pad
-          // Do FFT
-          fft2.ForwardDecFreq(csize2,carr[i/2]);
-        }
-        for(;i<rsize1;i+=2) { // In case rsize1 == 1 mod 2
-          for(j=0;j<rsize2;j++)
-            carr[i/2][j]=MyComplex(rarr[i][j],0.);
-          for(j=rsize2;j<csize2;j++) carr[i/2][j]=MyComplex(0.,0.); // Zero pad
-          // Do FFT
-          fft2.ForwardDecFreq(csize2,carr[i/2]);
-        }
-        // Any remaining rows are zero padding on the fly during
-        // the column FFT's (see below).
+        //! Do row FFT's.
+        for(i = 0; i + 1 < rsize1; i += 2)
+        {
+            //! Pack complex<T> row.
+          for(j = 0; j < rsize2; ++j)
+          {
+              carr[i / 2][j] = complex<T>(rarr[i][j], rarr[i + 1][j]);
+          }
 
-        // Do column FFT's
-        // Do column 0 and csize2/2, making use of the fact that
-        // these 2 columns are 'real'.
-        for(i=0;i<(rsize1+1)/2;i++) {
-          x1=carr[i][0].real();         x2=carr[i][0].imag();
-          y1=carr[i][csize2/2].real();  y2=carr[i][csize2/2].imag();
-          scratch[2*i]     = MyComplex(x1,y1);
-          scratch[(2*i)+1] = MyComplex(x2,y2);
+          for(j = rsize2; j < csize2; ++j)
+          {
+              carr[i / 2][j] = complex<T>(0.,0.); /*!< Zero pad */
+          }
+          //! Do FFT.
+          m_fft2.ForwardDecFreq(csize2, carr[i / 2]);
         }
-        for(i*=2;i<vecsize1;i++) scratch[i]=MyComplex(0.,0.); // Zero pad
-        fft1.ForwardDecFreq(vecsize1,scratch);
-        carr[0][0]        = MyComplex(scratch[0].real(),0.);
-        carr[0][csize2/2] = MyComplex(scratch[0].imag(),0.);
-        for(i=1;i<csize1-1;i++) {
-          x1=scratch[i].real()/2;           y1=scratch[i].imag()/2;
-          x2=scratch[vecsize1-i].real()/2;  y2=scratch[vecsize1-i].imag()/2;
-          carr[i][0]        = MyComplex(x1+x2,y1-y2);
-          carr[i][csize2/2] = MyComplex(y1+y2,x2-x1);
-        }
-        carr[csize1-1][0]        = MyComplex(scratch[csize1-1].real(),0.);
-        carr[csize1-1][csize2/2] = MyComplex(scratch[csize1-1].imag(),0.);
 
-        // Do remaining columns
-        for(j=1;j+1<csize2/2;j+=2) {
-          for(i=0;i<(rsize1+1)/2;i++) {
-            x1 =carr[i][j].real()/2;           y1 =carr[i][j].imag()/2;
-            xb1=carr[i][j+1].real()/2;         yb1=carr[i][j+1].imag()/2;
-            xb2=carr[i][csize2-1-j].real()/2;  yb2=carr[i][csize2-1-j].imag()/2;
-            x2 =carr[i][csize2-j].real()/2;    y2 =carr[i][csize2-j].imag()/2;
-            scratch[2*i]     = MyComplex(x1+x2,y1-y2);
-            scratch[(2*i)+1] = MyComplex(y1+y2,x2-x1);
-            scratchb[2*i]     = MyComplex(xb1+xb2,yb1-yb2);
-            scratchb[(2*i)+1] = MyComplex(yb1+yb2,xb2-xb1);
+        for(; i < rsize1; i += 2)
+        { //! In case rsize1 == 1 mod 2.
+          for(j = 0; j < rsize2; ++j)
+          {
+              carr[i / 2][j] = complex<T>(rarr[i][j], 0.);
           }
-          for(i*=2;i<vecsize1;i++)
-            scratch[i]= scratchb[i]=MyComplex(0.,0.);  // Zero pad
-          fft1.ForwardDecFreq(vecsize1,scratchb);
-          fft1.ForwardDecFreq(vecsize1,scratch);
-          carr[0][j]=scratch[0];     carr[0][csize2-j]=conj(scratch[0]);
-          carr[0][j+1]=scratchb[0];  carr[0][csize2-1-j]=conj(scratchb[0]);
-          for(i=1;i<csize1;i++) {
-            carr[i][j]=scratch[i];
-            carr[i][j+1]=scratchb[i];
-            carr[i][csize2-1-j]=conj(scratchb[vecsize1-i]);
-            carr[i][csize2-j]=conj(scratch[vecsize1-i]);
+
+          for(j = rsize2; j < csize2; ++j)
+          {
+              carr[i / 2][j] = complex<T>(0., 0.); /*!< Zero pad */
           }
+          //! Do FFT.
+          m_fft2.ForwardDecFreq(csize2, carr[i / 2]);
         }
-        // There should be 1 column left over
-        if(j<csize2/2) {
-          for(i=0;i<(rsize1+1)/2;i++) {
-            x1=carr[i][j].real()/2;         y1=carr[i][j].imag()/2;
-            x2=carr[i][csize2-j].real()/2;  y2=carr[i][csize2-j].imag()/2;
-            scratch[2*i]     = MyComplex(x1+x2,y1-y2);
-            scratch[(2*i)+1] = MyComplex(y1+y2,x2-x1);
-          }
-          for(i*=2;i<vecsize1;i++) scratch[i]=MyComplex(0.,0.); // Zero pad
-          fft1.ForwardDecFreq(vecsize1,scratch);
-          carr[0][j]=scratch[0];   carr[0][csize2-j]=conj(scratch[0]);
-          for(i=1;i<csize1;i++) {
-            carr[i][j]=scratch[i];
-            carr[i][csize2-j]=conj(scratch[vecsize1-i]);
-          }
+        //! Any remaining rows are zero padding on the fly during the column FFT's (see below).
+
+        //! Do column FFT's.
+        //! Do column 0 and csize2/2, making use of the fact that these 2 columns are 'real'.
+        for(i = 0; i < (rsize1 + 1) / 2; ++i)
+        {
+            x1 = carr[i][0]->getReal();
+            x2 = carr[i][0]->getImag();
+
+            y1 = carr[i][csize2 / 2]->getReal();
+            y2 = carr[i][csize2 / 2]->getImag();
+
+            m_scratcha[2 * i      ] = complex<T>(x1, y1);
+            m_scratcha[(2 * i) + 1] = complex<T>(x2, y2);
+        }
+
+        for(i *= 2; i < m_vec_size1; ++i)
+        {
+            m_scratcha[i] = complex<T>(0., 0.); /*!< Zero pad */
+        }
+
+        m_fft1.ForwardDecFreq(m_vec_size1, m_scratcha);
+
+        carr[0][0         ] = complex<T>(m_scratcha[0]->getReal(), 0.);
+        carr[0][csize2 / 2] = complex<T>(m_scratcha[0]->getImag(), 0.);
+
+        for(i = 1; i < csize1 - 1; ++i)
+        {
+          x1 = m_scratcha[i]->getReal() / 2;
+          y1 = m_scratcha[i]->getImag() / 2;
+
+          x2 = m_scratcha[m_vec_size1 - i]->getReal() / 2;
+          y2 = m_scratcha[m_vec_size1 - i]->getImag() / 2;
+
+          carr[i][0         ] = complex<T>(x1 + x2, y1 - y2);
+          carr[i][csize2 / 2] = complex<T>(y1 + y2, x2 - x1);
+        }
+
+        carr[csize1 - 1][0         ] = complex<T>(m_scratcha[csize1 - 1]->getReal(), 0.);
+        carr[csize1 - 1][csize2 / 2] = complex<T>(m_scratcha[csize1 - 1]->getImag(), 0.);
+
+        //! Do remaining columns.
+        for(j = 1; j + 1 < csize2 / 2; j += 2)
+        {
+            for(i = 0; i < (rsize1 + 1) / 2; ++i)
+            {
+                x1 = carr[i][j]->getReal() / 2;
+                y1 = carr[i][j]->getImag() / 2;
+
+                xb1 = carr[i][j + 1]->getReal() / 2;
+                yb1 = carr[i][j + 1]->getImag() / 2;
+
+                xb2 = carr[i][csize2 - 1 - j]->getReal() / 2;
+                yb2 = carr[i][csize2 - 1 - j]->getImag() / 2;
+
+                x2 = carr[i][csize2 - j]->getReal() / 2;
+                y2 = carr[i][csize2 - j]->getImag() / 2;
+
+                m_scratcha[2 * i      ] = complex<T>(x1 + x2, y1 - y2);
+                m_scratcha[(2 * i) + 1] = complex<T>(y1 + y2, x2 - x1);
+
+                m_scratchb[2 * i      ] = complex<T>(xb1 + xb2, yb1 - yb2);
+                m_scratchb[(2 * i) + 1] = complex<T>(yb1 + yb2, xb2 - xb1);
+            }
+
+            for(i *= 2; i < m_vec_size1; ++i)
+            {
+                m_scratcha[i] = m_scratchb[i] = complex<T>(0., 0.);  /*!< Zero pad */
+            }
+
+            m_fft1.ForwardDecFreq(m_vec_size1, m_scratchb);
+            m_fft1.ForwardDecFreq(m_vec_size1, m_scratcha);
+
+            carr[0][j         ] = m_scratcha[0];
+            carr[0][csize2 - j] = m_scratcha[0]->conj();
+
+            carr[0][j + 1         ] = m_scratchb[0];
+            carr[0][csize2 - 1 - j] = m_scratchb[0]->conj();
+
+            for(i = 1; i < csize1; ++i)
+            {
+                carr[i][j] = m_scratcha[i];
+                carr[i][j + 1] = m_scratchb[i];
+                carr[i][csize2 - 1 - j] = m_scratchb[m_vec_size1 - i]->conj();
+                carr[i][csize2 - j] = m_scratcha[m_vec_size1 - i]->conj();
+            }
+        }
+
+        //! There should be 1 column left over.
+        if(j < csize2 / 2)
+        {
+            for(i = 0; i < (rsize1 + 1) / 2; ++i)
+            {
+                x1 = carr[i][j]->getReal() / 2;
+                y1 = carr[i][j]->getImag() / 2;
+
+                x2 = carr[i][csize2 - j]->getReal() / 2;
+                y2 = carr[i][csize2 - j]->getImag() / 2;
+
+                m_scratcha[2 * i      ] = complex<T>(x1 + x2, y1 - y2);
+                m_scratcha[(2 * i) + 1] = complex<T>(y1 + y2, x2 - x1);
+            }
+
+            for(i *= 2; i < m_vec_size1; ++i)
+            {
+                m_scratcha[i] = complex<T>(0., 0.); /*!< Zero pad */
+            }
+
+            m_fft1.ForwardDecFreq(m_vec_size1, m_scratcha);
+            carr[0][j] = m_scratcha[0];
+            carr[0][csize2-j] = m_scratcha[0]->conj();
+
+            for(i = 1; i < csize1; ++i)
+            {
+                carr[i][j] = m_scratcha[i];
+                carr[i][csize2 - j] = m_scratcha[m_vec_size1 - i]->conj();
+            }
         }
     }
 
+    /*!
+     * \brief InverseRC - Inverse analogue of Forward FFT function ForwardRC
+     * \param csize1
+     * \param csize2
+     * \param carr
+     * \param rsize1
+     * \param rsize2
+     * \param rarr
+     */
     void InverseRC(int csize1, int csize2,
                    const complex<T>* const* carr,
                    int rsize1, int rsize2, double** rarr)
