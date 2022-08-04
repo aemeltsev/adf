@@ -83,12 +83,12 @@ private:
         if(!(m_permindex = new int[size])) ADF_ERROR("Error in FFT::Setup ErrNoMem");
 
         m_permindex[0] = 0;
-        int m, n;    /*!< The following code relies heavily on size == 2^log2vecsize */
+        int m, n;    /*!< The following code relies heavily on size == 2 ^ m_log2_vec_size */
         for(k = 1, n = (size >> 1); k < size; ++k)
         {
             //! At each step, n is bit-reversed pattern of k.
             if(n > k) m_permindex[k] = n;  /*!< Set a swap index */
-            else m_permindex[k] = 0;     /*!< Do nothing: Index already swapped or the same */
+            else m_permindex[k] = 0;       /*!< Do nothing: Index already swapped or the same */
 
             //! Calculate next n.
             m = (size >> 1);
@@ -549,7 +549,7 @@ public:
 
         m_vec_size1 = 0;
         m_vec_size2 = 0;
-        m_fft1.ReleaseMemory();
+        m_fft1.ReleaseMemory(); /*!< m_fft1 and m_fft2 stack variable which inside uses a raw pointers*/
         m_fft2.ReleaseMemory();
     }
 
@@ -627,12 +627,12 @@ private:
      *                    The routine choice is made automatically
      *                    (based on speed estimates)by the routines ::Forward &
      *                    ::Inverse (below in the "public" access block).
-     * \param rsize1
-     * \param rsize2
-     * \param rarr
-     * \param csize1
-     * \param csize2
-     * \param carr
+     * \param rsize1 - dimension of input array
+     * \param rsize2 - dimension of input array
+     * \param rarr - input 2 dimension array
+     * \param csize1 - dimension of output array
+     * \param csize2 - dimension of output array
+     * \param carr - output result array with complex values
      */
     void ForwardCR(int rsize1,
                    int rsize2,
@@ -716,19 +716,19 @@ private:
             for(i = rsize1; i < m_vec_size1; ++i) m_scratcha[i] = complex<T>(0., 0.);
 
             m_fft1.ForwardDecFreq(m_vec_size1, m_scratcha);
-            carr[0][j    ] = complex<T>(m_scratcha[0]->getReal(),
-                                        m_scratcha[m_vec_size1 / 2]->getReal());
+            carr[0][j    ] = complex<T>(m_scratcha[0].getReal(),
+                                        m_scratcha[m_vec_size1 / 2].getReal());
 
-            carr[0][j + 1] = complex<T>(m_scratcha[0]->getImag(),
-                                        m_scratcha[m_vec_size1/2]->getImag());
+            carr[0][j + 1] = complex<T>(m_scratcha[0].getImag(),
+                                        m_scratcha[m_vec_size1/2].getImag());
 
             for(i = 1; i < m_vec_size1 / 2; ++i)
             { //! ASSUMES vecsize1 is even!
-                x1 = m_scratcha[i]->getReal() / 2;
-                y1 = m_scratcha[i]->getImag() / 2;
+                x1 = m_scratcha[i].getReal() / 2;
+                y1 = m_scratcha[i].getImag() / 2;
 
-                x2 = m_scratcha[m_vec_size1 - i]->getReal() / 2;
-                y2 = m_scratcha[m_vec_size1 - i]->getImag() / 2;
+                x2 = m_scratcha[m_vec_size1 - i].getReal() / 2;
+                y2 = m_scratcha[m_vec_size1 - i].getImag() / 2;
 
                 carr[i][j    ] = complex<T>(x1 + x2, y1 - y2);
                 carr[i][j + 1] = complex<T>(y1 + y2, x2 - x1);
@@ -749,16 +749,16 @@ private:
         for(i = 0; i < csize1 - 1; ++i) m_fft2.ForwardDecFreq(csize2, carr[i]);
 
         //! Pull out row 0 & row csize1-1 from (packed) row 0.
-        carr[csize1 - 1][0] = complex<T>(carr[0][0]->getImag(), 0.);
-        carr[0][0]          = complex<T>(carr[0][0]->getReal(), 0.);
+        carr[csize1 - 1][0] = complex<T>(carr[0][0].getImag(), 0.);
+        carr[0][0]          = complex<T>(carr[0][0].getReal(), 0.);
 
         for(j = 1; j < csize2 / 2; ++j)
         {
-            x1 = carr[0][j]->getReal() / 2;
-            y1 = carr[0][j]->getImag() / 2;
+            x1 = carr[0][j].getReal() / 2;
+            y1 = carr[0][j].getImag() / 2;
 
-            x2 = carr[0][csize2 - j]->getReal() / 2;
-            y2 = carr[0][csize2 - j]->getImag() / 2;
+            x2 = carr[0][csize2 - j].getReal() / 2;
+            y2 = carr[0][csize2 - j].getImag() / 2;
 
             complex<T> temp1(x1 + x2, y1 - y2);
             complex<T> temp2(y1 + y2, x2 - x1);
@@ -769,8 +769,8 @@ private:
             carr[csize1 - 1][csize2 - j]  = temp2.conj();
         }
 
-        carr[csize1 - 1][csize2 / 2] = complex<T>(carr[0][csize2 / 2]->getImag(), 0.);
-        carr[0][csize2 / 2]          = complex<T>(carr[0][csize2 / 2]->getReal(), 0.);
+        carr[csize1 - 1][csize2 / 2] = complex<T>(carr[0][csize2 / 2].getImag(), 0.);
+        carr[0][csize2 / 2]          = complex<T>(carr[0][csize2 / 2].getReal(), 0.);
     }
 
     /*!
@@ -779,12 +779,12 @@ private:
      *                    The routine choice is made automatically
      *                    (based on speed estimates)by the routines ::Forward &
      *                    ::Inverse (below in the "public" access block).
-     * \param rsize1
-     * \param rsize2
-     * \param rarr
-     * \param csize1
-     * \param csize2
-     * \param carr
+     * \param rsize1 - dimension of input array
+     * \param rsize2 - dimension of input array
+     * \param rarr - input 2 dimension array
+     * \param csize1 - dimension of output array
+     * \param csize2 - dimension of output array
+     * \param carr - output result array with complex values
      */
     void ForwardRC(int rsize1,
                    int rsize2,
@@ -837,11 +837,11 @@ private:
         //! Do column 0 and csize2/2, making use of the fact that these 2 columns are 'real'.
         for(i = 0; i < (rsize1 + 1) / 2; ++i)
         {
-            x1 = carr[i][0]->getReal();
-            x2 = carr[i][0]->getImag();
+            x1 = carr[i][0].getReal();
+            x2 = carr[i][0].getImag();
 
-            y1 = carr[i][csize2 / 2]->getReal();
-            y2 = carr[i][csize2 / 2]->getImag();
+            y1 = carr[i][csize2 / 2].getReal();
+            y2 = carr[i][csize2 / 2].getImag();
 
             m_scratcha[2 * i      ] = complex<T>(x1, y1);
             m_scratcha[(2 * i) + 1] = complex<T>(x2, y2);
@@ -854,40 +854,40 @@ private:
 
         m_fft1.ForwardDecFreq(m_vec_size1, m_scratcha);
 
-        carr[0][0         ] = complex<T>(m_scratcha[0]->getReal(), 0.);
-        carr[0][csize2 / 2] = complex<T>(m_scratcha[0]->getImag(), 0.);
+        carr[0][0         ] = complex<T>(m_scratcha[0].getReal(), 0.);
+        carr[0][csize2 / 2] = complex<T>(m_scratcha[0].getImag(), 0.);
 
         for(i = 1; i < csize1 - 1; ++i)
         {
-          x1 = m_scratcha[i]->getReal() / 2;
-          y1 = m_scratcha[i]->getImag() / 2;
+          x1 = m_scratcha[i].getReal() / 2;
+          y1 = m_scratcha[i].getImag() / 2;
 
-          x2 = m_scratcha[m_vec_size1 - i]->getReal() / 2;
-          y2 = m_scratcha[m_vec_size1 - i]->getImag() / 2;
+          x2 = m_scratcha[m_vec_size1 - i].getReal() / 2;
+          y2 = m_scratcha[m_vec_size1 - i].getImag() / 2;
 
           carr[i][0         ] = complex<T>(x1 + x2, y1 - y2);
           carr[i][csize2 / 2] = complex<T>(y1 + y2, x2 - x1);
         }
 
-        carr[csize1 - 1][0         ] = complex<T>(m_scratcha[csize1 - 1]->getReal(), 0.);
-        carr[csize1 - 1][csize2 / 2] = complex<T>(m_scratcha[csize1 - 1]->getImag(), 0.);
+        carr[csize1 - 1][0         ] = complex<T>(m_scratcha[csize1 - 1].getReal(), 0.);
+        carr[csize1 - 1][csize2 / 2] = complex<T>(m_scratcha[csize1 - 1].getImag(), 0.);
 
         //! Do remaining columns.
         for(j = 1; j + 1 < csize2 / 2; j += 2)
         {
             for(i = 0; i < (rsize1 + 1) / 2; ++i)
             {
-                x1 = carr[i][j]->getReal() / 2;
-                y1 = carr[i][j]->getImag() / 2;
+                x1 = carr[i][j].getReal() / 2;
+                y1 = carr[i][j].getImag() / 2;
 
-                xb1 = carr[i][j + 1]->getReal() / 2;
-                yb1 = carr[i][j + 1]->getImag() / 2;
+                xb1 = carr[i][j + 1].getReal() / 2;
+                yb1 = carr[i][j + 1].getImag() / 2;
 
-                xb2 = carr[i][csize2 - 1 - j]->getReal() / 2;
-                yb2 = carr[i][csize2 - 1 - j]->getImag() / 2;
+                xb2 = carr[i][csize2 - 1 - j].getReal() / 2;
+                yb2 = carr[i][csize2 - 1 - j].getImag() / 2;
 
-                x2 = carr[i][csize2 - j]->getReal() / 2;
-                y2 = carr[i][csize2 - j]->getImag() / 2;
+                x2 = carr[i][csize2 - j].getReal() / 2;
+                y2 = carr[i][csize2 - j].getImag() / 2;
 
                 m_scratcha[2 * i      ] = complex<T>(x1 + x2, y1 - y2);
                 m_scratcha[(2 * i) + 1] = complex<T>(y1 + y2, x2 - x1);
@@ -905,17 +905,17 @@ private:
             m_fft1.ForwardDecFreq(m_vec_size1, m_scratcha);
 
             carr[0][j         ] = m_scratcha[0];
-            carr[0][csize2 - j] = m_scratcha[0]->conj();
+            carr[0][csize2 - j] = m_scratcha[0].conj();
 
             carr[0][j + 1         ] = m_scratchb[0];
-            carr[0][csize2 - 1 - j] = m_scratchb[0]->conj();
+            carr[0][csize2 - 1 - j] = m_scratchb[0].conj();
 
             for(i = 1; i < csize1; ++i)
             {
                 carr[i][j] = m_scratcha[i];
                 carr[i][j + 1] = m_scratchb[i];
-                carr[i][csize2 - 1 - j] = m_scratchb[m_vec_size1 - i]->conj();
-                carr[i][csize2 - j] = m_scratcha[m_vec_size1 - i]->conj();
+                carr[i][csize2 - 1 - j] = m_scratchb[m_vec_size1 - i].conj();
+                carr[i][csize2 - j] = m_scratcha[m_vec_size1 - i].conj();
             }
         }
 
@@ -924,11 +924,11 @@ private:
         {
             for(i = 0; i < (rsize1 + 1) / 2; ++i)
             {
-                x1 = carr[i][j]->getReal() / 2;
-                y1 = carr[i][j]->getImag() / 2;
+                x1 = carr[i][j].getReal() / 2;
+                y1 = carr[i][j].getImag() / 2;
 
-                x2 = carr[i][csize2 - j]->getReal() / 2;
-                y2 = carr[i][csize2 - j]->getImag() / 2;
+                x2 = carr[i][csize2 - j].getReal() / 2;
+                y2 = carr[i][csize2 - j].getImag() / 2;
 
                 m_scratcha[2 * i      ] = complex<T>(x1 + x2, y1 - y2);
                 m_scratcha[(2 * i) + 1] = complex<T>(y1 + y2, x2 - x1);
@@ -941,198 +941,285 @@ private:
 
             m_fft1.ForwardDecFreq(m_vec_size1, m_scratcha);
             carr[0][j] = m_scratcha[0];
-            carr[0][csize2-j] = m_scratcha[0]->conj();
+            carr[0][csize2-j] = m_scratcha[0].conj();
 
             for(i = 1; i < csize1; ++i)
             {
                 carr[i][j] = m_scratcha[i];
-                carr[i][csize2 - j] = m_scratcha[m_vec_size1 - i]->conj();
+                carr[i][csize2 - j] = m_scratcha[m_vec_size1 - i].conj();
             }
         }
     }
 
     /*!
-     * \brief InverseRC - Inverse analogue of Forward FFT function ForwardRC
-     * \param csize1
-     * \param csize2
-     * \param carr
-     * \param rsize1
-     * \param rsize2
-     * \param rarr
+     * \brief InverseRC - Inverse analogue of Forward FFT function ForwardRC. It is natural
+     *                    to pair ForwardCR with InverseRC. The routine choice is made automatically
+     *                    (based on speed estimates)by the routines ::Forward &
+     *                    ::Inverse (below in the "public" access block).
+     * \param csize1 - dimension of input array
+     * \param csize2 - dimension of input array
+     * \param carr - input 2 dimension array with complex coeff
+     * \param rsize1 - dimension of output array
+     * \param rsize2 - dimension of output array
+     * \param rarr - output 2 dimension array
      */
-    void InverseRC(int csize1, int csize2,
+    void InverseRC(int csize1,
+                   int csize2,
                    const complex<T>* const* carr,
-                   int rsize1, int rsize2, double** rarr)
+                   int rsize1,
+                   int rsize2,
+                   double** rarr)
     {
-        SetupInverse(2*(csize1-1),csize2); // Safety.
-        if(vecsize1==0 || vecsize2==0) return; // Nothing to do
+        SetupInverse(2 * (csize1 - 1), csize2); /*!< Safety */
+        if(m_vec_size1 == 0 || m_vec_size2 == 0) return; /*!< Nothing to do */
 
-        int i,j;
-        double x1,y1,x2,y2;
-        double xb1,yb1,xb2,yb2;
+        int i, j;
+        double x1, y1, x2, y2;
+        double xb1, yb1, xb2, yb2;
 
-        // Do row inverse FFT's
-        // Handle the first & csize1'th row specially.  These rows are
-        // the DFT's of real sequences, so they each satisfy the conjugate
-        // symmetry condition
-        workarr[0][0]=MyComplex(carr[0][0].real(),carr[csize1-1][0].real());
-        for(j=1;j<csize2/2;j++) {
-          x1=carr[0][j].real();         y1=carr[0][j].imag();
-          x2=carr[csize1-1][j].real();  y2=carr[csize1-1][j].imag();
-          workarr[0][j]        = MyComplex(x1-y2,x2+y1);
-          workarr[0][csize2-j] = MyComplex(x1+y2,x2-y1);
+        //! Do row inverse FFT's. Handle the first & csize1'th row specially.
+        //! These rows are the DFT's of real sequences, so they each satisfy the conjugate symmetry condition
+        m_work_arr[0][0] = complex<T>(carr[0][0].getReal(), carr[csize1 - 1][0].getReal());
+
+        for(j=1;j<csize2/2;j++)
+        {
+            x1 = carr[0][j].getReal();
+            y1 = carr[0][j].getImag();
+
+            x2 = carr[csize1 - 1][j].getReal();
+            y2 = carr[csize1 - 1][j].getImag();
+
+            m_work_arr[0][j         ] = complex<T>(x1 - y2, x2 + y1);
+            m_work_arr[0][csize2 - j] = complex<T>(x1 + y2, x2 - y1);
         }
-        workarr[0][csize2/2]=MyComplex(carr[0][csize2/2].real(),
-                         carr[csize1-1][csize2/2].real());
-        fft2.InverseDecTime(csize2,workarr[0],1.);
 
-        // iFFT the remaining rows
-        for(i=1;i<csize1-1;i++) {
-          for(j=0;j<csize2;j++) workarr[i][j]=carr[i][j];
-          fft2.InverseDecTime(csize2,workarr[i],1.);
+        m_work_arr[0][csize2 / 2] = complex<T>(carr[0][csize2 / 2].getReal(),
+                                               carr[csize1 - 1][csize2 / 2].getReal());
+        m_fft2.InverseDecTime(csize2, m_work_arr[0], 1.);
+
+        //! iFFT the remaining rows
+        for(i = 1; i < csize1 - 1; ++i)
+        {
+            for(j = 0; j < csize2; ++j)
+            {
+                m_work_arr[i][j] = carr[i][j];
+            }
+            m_fft2.InverseDecTime(csize2, m_work_arr[i], 1.);
         }
 
         // Now do iFFT's on columns.  These are conj. symmetric, so we
         // process them 2 at a time.  Also, recall the 1st row of workarr
         // contains the iFFT's of the 1st and csize1'th row of the given carr.
-        for(j=0;j+3<rsize2;j+=4) {
-          scratch[0]=
-            MyComplex(workarr[0][j].real(),workarr[0][j+1].real());
-          scratch[csize1-1]=
-            MyComplex(workarr[0][j].imag(),workarr[0][j+1].imag());
-          scratchb[0]=
-            MyComplex(workarr[0][j+2].real(),workarr[0][j+3].real());
-          scratchb[csize1-1]=
-            MyComplex(workarr[0][j+2].imag(),workarr[0][j+3].imag());
-          for(i=1;i<csize1-1;i++) {
-            x1 =workarr[i][j].real();    y1 =workarr[i][j].imag();
-            x2 =workarr[i][j+1].real();  y2 =workarr[i][j+1].imag();
-            xb1=workarr[i][j+2].real();  yb1=workarr[i][j+2].imag();
-            xb2=workarr[i][j+3].real();  yb2=workarr[i][j+3].imag();
-            scratch[i]          = MyComplex(x1-y2,x2+y1);
-            scratch[vecsize1-i] = MyComplex(x1+y2,x2-y1);
-            scratchb[i]          = MyComplex(xb1-yb2,xb2+yb1);
-            scratchb[vecsize1-i] = MyComplex(xb1+yb2,xb2-yb1);
-          }
-          fft1.InverseDecTime(vecsize1,scratchb,double(vecsize1*vecsize2));
-          fft1.InverseDecTime(vecsize1,scratch,double(vecsize1*vecsize2));
-          for(i=0;i<rsize1;i++) {
-            rarr[i][j]  =scratch[i].real();
-            rarr[i][j+1]=scratch[i].imag();
-            rarr[i][j+2]=scratchb[i].real();
-            rarr[i][j+3]=scratchb[i].imag();
-          }
+        for(j = 0; j + 3 < rsize2; j += 4)
+        {
+            m_scratcha[0] = complex<T>(m_work_arr[0][j].real(), m_work_arr[0][j + 1].real());
+            m_scratcha[csize1 - 1] = complex<T>(m_work_arr[0][j].imag(), m_work_arr[0][j + 1].imag());
+            m_scratchb[0] = complex<T>(m_work_arr[0][j + 2].real(), m_work_arr[0][j + 3].real());
+            m_scratchb[csize1 - 1] = complex<T>(m_work_arr[0][j + 2].imag(), m_work_arr[0][j + 3].imag());
+
+            for(i = 1; i < csize1 - 1; ++i)
+            {
+                x1 = m_work_arr[i][j].real();
+                y1 = m_work_arr[i][j].imag();
+
+                x2 = m_work_arr[i][j + 1].real();
+                y2 = m_work_arr[i][j + 1].imag();
+
+                xb1 = m_work_arr[i][j + 2].real();
+                yb1 = m_work_arr[i][j + 2].imag();
+
+                xb2 = m_work_arr[i][j + 3].real();
+                yb2 = m_work_arr[i][j + 3].imag();
+
+                m_scratcha[i]               = complex<T>(x1 - y2, x2 + y1);
+                m_scratcha[m_vec_size1 - i] = complex<T>(x1 + y2, x2 - y1);
+                m_scratchb[i]               = complex<T>(xb1 - yb2, xb2 + yb1);
+                m_scratchb[m_vec_size1 - i] = complex<T>(xb1 + yb2, xb2 - yb1);
+            }
+
+            m_fft1.InverseDecTime(m_vec_size1, m_scratchb, static_cast<T>(m_vec_size1 * m_vec_size2));
+            m_fft1.InverseDecTime(m_vec_size1, m_scratcha, static_cast<T>(m_vec_size1 * m_vec_size2));
+
+            for(i = 0; i < rsize1; ++i)
+            {
+                rarr[i][j]     = m_scratcha[i].real();
+                rarr[i][j + 1] = m_scratcha[i].imag();
+                rarr[i][j + 2] = m_scratchb[i].real();
+                rarr[i][j + 3] = m_scratchb[i].imag();
+            }
         }
+
         // Remaining columns if rsize2 is not divisible by 4.  OTOH, csize2
         // *is* divisible by 2, so we can assume workarr[i][j+1] exists.
-        for(;j<rsize2;j+=2) {
-          scratch[0]=
-            MyComplex(workarr[0][j].real(),workarr[0][j+1].real());
-          scratch[csize1-1]=
-            MyComplex(workarr[0][j].imag(),workarr[0][j+1].imag());
-          for(i=1;i<csize1-1;i++) {
-            x1 =workarr[i][j].real();    y1 =workarr[i][j].imag();
-            x2 =workarr[i][j+1].real();  y2 =workarr[i][j+1].imag();
-            scratch[i]          = MyComplex(x1-y2,x2+y1);
-            scratch[vecsize1-i] = MyComplex(x1+y2,x2-y1);
-          }
-          fft1.InverseDecTime(vecsize1,scratch,double(vecsize1*vecsize2));
-          for(i=0;i<rsize1;i++) {
-            rarr[i][j]  =scratch[i].real();
-            if(j+1<rsize2) rarr[i][j+1]=scratch[i].imag();
-          }
+        for(; j < rsize2; j += 2)
+        {
+            m_scratcha[0] = complex<T>(m_work_arr[0][j].real(), m_work_arr[0][j + 1].real());
+            m_scratcha[csize1 - 1] = complex<T>(m_work_arr[0][j].imag(), m_work_arr[0][j + 1].imag());
+
+            for(i = 1; i < csize1 - 1; ++i)
+            {
+                x1 = m_work_arr[i][j].real();
+                y1 = m_work_arr[i][j].imag();
+
+                x2 = m_work_arr[i][j + 1].real();
+                y2 = m_work_arr[i][j + 1].imag();
+
+                m_scratcha[i]               = complex<T>(x1 - y2, x2 + y1);
+                m_scratcha[m_vec_size1 - i] = complex<T>(x1 + y2, x2 - y1);
+            }
+
+            m_fft1.InverseDecTime(m_vec_size1, m_scratcha, static_cast<T>(m_vec_size1 * m_vec_size2));
+
+            for(i=0;i<rsize1;i++)
+            {
+                rarr[i][j] = m_scratcha[i].real();
+                if(j + 1 < rsize2) rarr[i][j + 1] = m_scratcha[i].imag();
+            }
         }
     }
 
-    void InverseCR(int csize1, int csize2,
+    /*!
+     * \brief InverseCR - Inverse analogue of Forward FFT function ForwardCR. It is natural
+     *                    to pair ForwardRC with InverseCR. The routine choice is made automatically
+     *                    (based on speed estimates)by the routines ::Forward &
+     *                    ::Inverse (below in the "public" access block).
+     * \param csize1 - dimension of input array
+     * \param csize2 - dimension of input array
+     * \param carr - input 2 dimension array with complex coeff
+     * \param rsize1 - dimension of output array
+     * \param rsize2 - dimension of output array
+     * \param rarr - output 2 dimension array
+     */
+    void InverseCR(int csize1,
+                   int csize2,
                    const complex<T>* const* carr,
-                   int rsize1, int rsize2, double** rarr)
+                   int rsize1,
+                   int rsize2,
+                   double** rarr)
     {
-        SetupInverse(2*(csize1-1),csize2); // Safety
-        if(vecsize1==0 || vecsize2==0) return; // Nothing to do
+        SetupInverse(2*(csize1-1),csize2); /*!< Safety */
+        if(m_vec_size1 == 0 || m_vec_size2 == 0) return; /*!< Nothing to do */
 
-        int i,j;
-        double x1,y1,x2,y2,xb1,yb1,xb2,yb2;
+        int i, j;
+        double x1, y1, x2, y2;
+        double xb1, yb1, xb2, yb2;
 
-        // Column iFFT's
-        // Handle the first & csize2/2'th column specially.  These cols are
-        // the DFT's of real sequences, so they each satisfy the conjugate
-        // symmetry condition
-        scratch[0]=MyComplex(carr[0][0].real(),carr[0][csize2/2].real());
-        for(i=1;i<csize1-1;i++) {
-          x1=carr[i][0].real();         y1=carr[i][0].imag();
-          x2=carr[i][csize2/2].real();  y2=carr[i][csize2/2].imag();
-          scratch[i]          = MyComplex(x1-y2,x2+y1);
-          scratch[vecsize1-i] = MyComplex(x1+y2,x2-y1);
-        }
-        scratch[csize1-1]=MyComplex(carr[csize1-1][0].real(),
-                      carr[csize1-1][csize2/2].real());
-        fft1.InverseDecTime(vecsize1,scratch,1);
-        for(i=0;i<vecsize1;i+=2) { // ASSUMES vecsize1 is even
-          // See packing note below.
-          workarr[i/2][0]        = MyComplex(scratch[i].real(),scratch[i+1].real());
-          workarr[i/2][csize2/2] = MyComplex(scratch[i].imag(),scratch[i+1].imag());
-        }
-        //
-        // Do remaining column iFFT's, two at a time for better memory
-        // access locality.
-        for(j=1;j+1<csize2/2;j+=2) {
-          scratch[0]=carr[0][j];
-          scratchb[0]=carr[0][j+1];
-          for(i=1;i<csize1-1;i++) {
-            scratch[i]=carr[i][j];
-            scratchb[i]=carr[i][j+1];
-            scratchb[vecsize1-i]=conj(carr[i][csize2-1-j]);
-            scratch[vecsize1-i]=conj(carr[i][csize2-j]);
-          }
-          scratch[csize1-1]=carr[csize1-1][j];
-          scratchb[csize1-1]=carr[csize1-1][j+1];
-          fft1.InverseDecTime(vecsize1,scratchb,1.);
-          fft1.InverseDecTime(vecsize1,scratch,1.);
-          // Pack into workarr.  Rows will be conjugate symmetric, so we
-          // can pack two rows into 1 via r[k]+i.r[k+1] -> workarr[k/2].
-          for(i=0;i<rsize1;i+=2) {
-            // CAREFUL! The above 'rsize1' bound may depend on how the
-            // iFFT's are calculated in the 'Row iFFT's' code section,
-            // and how 'i' is initialized.
-            x1=scratch[i].real();      y1=scratch[i].imag();
-            x2=scratch[i+1].real();    y2=scratch[i+1].imag();
-            xb1=scratchb[i].real();    yb1=scratchb[i].imag();
-            xb2=scratchb[i+1].real();  yb2=scratchb[i+1].imag();
-            workarr[i/2][j]          = MyComplex(x1-y2,x2+y1);
-            workarr[i/2][j+1]        = MyComplex(xb1-yb2,xb2+yb1);
-            workarr[i/2][csize2-j-1] = MyComplex(xb1+yb2,xb2-yb1);
-            workarr[i/2][csize2-j]   = MyComplex(x1+y2,x2-y1);
-          }
-        }
-        // There should be 1 column left over
-        if((j=(csize2/2)-1)%2==1) {
-          // Column (csize2/2)-1 *not* processed above
-          scratch[0]=carr[0][j];
-          for(i=1;i<csize1-1;i++) {
-            scratch[i]=carr[i][j];
-            scratch[vecsize1-i]=conj(carr[i][csize2-j]);
-          }
-          scratch[csize1-1]=carr[csize1-1][j];
-          fft1.InverseDecTime(vecsize1,scratch,1);
-          for(i=0;i<rsize1;i+=2) {
-            // CAREFUL! The above 'rsize1' bound may depend on how the
-            // iFFT's are calculated in the 'Row iFFT's' code section,
-            // and how 'i' is initialized.
-            x1=scratch[i].real();    y1=scratch[i].imag();
-            x2=scratch[i+1].real();  y2=scratch[i+1].imag();
-            workarr[i/2][j]        = MyComplex(x1-y2,x2+y1);
-            workarr[i/2][csize2-j] = MyComplex(x1+y2,x2-y1);
-          }
+        //! Column iFFT's Handle the first & csize2 / 2'th column specially.
+        //! These cols are the DFT's of real sequences, so they each satisfy the conjugate
+        //! symmetry condition
+        m_scratcha[0] = complex<T>(carr[0][0].real(), carr[0][csize2 / 2].real());
+
+        for(i = 1; i < csize1 - 1; ++i)
+        {
+            x1 = carr[i][0].real();
+            y1 = carr[i][0].imag();
+
+            x2 = carr[i][csize2 / 2].real();
+            y2 = carr[i][csize2 / 2].imag();
+
+            m_scratcha[i]            = complex<T>(x1 - y2, x2 + y1);
+            m_scratcha[m_vec_size1 - i] = complex<T>(x1 + y2, x2 - y1);
         }
 
-        // Row iFFT's
-        for(i=0;i<rsize1;i+=2) {
-          fft2.InverseDecTime(vecsize2,workarr[i/2],double(vecsize1*vecsize2));
-          for(j=0;j<rsize2;j++) rarr[i][j]   = workarr[i/2][j].real();
-          if(i+1<rsize1) {
-            for(j=0;j<rsize2;j++) rarr[i+1][j] = workarr[i/2][j].imag();
-          }
+        m_scratcha[csize1 - 1] = complex<T>(carr[csize1 - 1][0].real(),
+                                            carr[csize1 - 1][csize2 / 2].real());
+        m_fft1.InverseDecTime(m_vec_size1, m_scratcha, 1);
+
+        for(i = 0; i < m_vec_size1; i += 2)
+        { //! ASSUMES vecsize1 is even
+          //! See packing note below.
+          m_work_arr[i / 2][0]          = complex<T>(m_scratcha[i].real(), m_scratcha[i+1].real());
+          m_work_arr[i / 2][csize2 / 2] = complex<T>(m_scratcha[i].imag(), m_scratcha[i+1].imag());
+        }
+
+        //! Do remaining column iFFT's, two at a time for better memory access locality.
+        for(j = 1; j + 1 < csize2 / 2; j += 2)
+        {
+            m_scratcha[0] = carr[0][j];
+            m_scratchb[0] = carr[0][j + 1];
+
+            for(i = 1; i < csize1 - 1; ++i)
+            {
+                m_scratcha[i] = carr[i][j];
+                m_scratchb[i] = carr[i][j + 1];
+                m_scratchb[m_vec_size1 - i] = carr[i][csize2 - 1 - j].conj();
+                m_scratcha[m_vec_size1 - i] = carr[i][csize2 - j].conj();
+            }
+            m_scratcha[csize1 - 1] = carr[csize1 - 1][j];
+            m_scratchb[csize1 - 1] = carr[csize1 - 1][j + 1];
+            m_fft1.InverseDecTime(m_vec_size1, m_scratchb, 1.);
+            m_fft1.InverseDecTime(m_vec_size1, m_scratcha, 1.);
+
+            //! Pack into m_work_arr. Rows will be conjugate symmetric, so we
+            //! can pack two rows into 1 via r[k]+i.r[k+1] -> m_work_arr[k/2].
+            for(i = 0; i < rsize1; i += 2)
+            {
+                // CAREFUL! The above 'rsize1' bound may depend on how the
+                // iFFT's are calculated in the 'Row iFFT's' code section,
+                // and how 'i' is initialized.
+                x1 = m_scratcha[i].real();
+                y1 = m_scratcha[i].imag();
+
+                x2 = m_scratcha[i + 1].real();
+                y2 = m_scratcha[i + 1].imag();
+
+                xb1 = m_scratchb[i].real();
+                yb1 = m_scratchb[i].imag();
+
+                xb2 = m_scratchb[i + 1].real();
+                yb2 = m_scratchb[i + 1].imag();
+
+                m_work_arr[i / 2][j]              = complex<T>(x1 - y2, x2 + y1);
+                m_work_arr[i / 2][j + 1]          = complex<T>(xb1 - yb2, xb2 + yb1);
+                m_work_arr[i / 2][csize2 - j - 1] = complex<T>(xb1 + yb2, xb2 - yb1);
+                m_work_arr[i / 2][csize2 - j]     = complex<T>(x1 + y2, x2 - y1);
+            }
+        }
+
+        //! There should be 1 column left over
+        if((j = (csize2 / 2) - 1) % 2 == 1)
+        {
+            //! Column (csize2 / 2) - 1 *not* processed above
+            m_scratcha[0] = carr[0][j];
+            for(i = 1; i < csize1 - 1; ++i)
+            {
+                m_scratcha[i] = carr[i][j];
+                m_scratcha[m_vec_size1 - i] = carr[i][csize2 - j].conj();
+            }
+
+            m_scratcha[csize1 - 1] = carr[csize1 - 1][j];
+            m_fft1.InverseDecTime(m_vec_size1, m_scratcha, 1);
+
+            for(i = 0; i < rsize1; i += 2)
+            {
+                // CAREFUL! The above 'rsize1' bound may depend on how the
+                // iFFT's are calculated in the 'Row iFFT's' code section,
+                // and how 'i' is initialized.
+                x1 = m_scratcha[i].real();
+                y1 = m_scratcha[i].imag();
+
+                x2 = m_scratcha[i + 1].real();
+                y2 = m_scratcha[i + 1].imag();
+
+                m_work_arr[i / 2][j]          = complex<T>(x1 - y2, x2 + y1);
+                m_work_arr[i / 2][csize2 - j] = complex<T>(x1 + y2, x2 - y1);
+            }
+        }
+
+        //! Row iFFT's
+        for(i = 0; i < rsize1; i += 2)
+        {
+            m_fft2.InverseDecTime(m_vec_size2, m_work_arr[i/2], static_cast<T>(m_vec_size1 * m_vec_size2));
+
+            for(j = 0; j < rsize2; ++j)
+            {
+                rarr[i][j] = m_work_arr[i / 2][j].real();
+            }
+
+            if(i + 1 < rsize1)
+            {
+                for(j = 0; j < rsize2; ++j) rarr[i + 1][j] = m_work_arr[i / 2][j].imag();
+            }
         }
     }
 
@@ -1140,7 +1227,9 @@ public:
     FFTR2D()
     {
         m_vec_size1 = m_vec_size2 = 0;
+        m_log_size1 = m_log_size2 = 0;
         m_scratcha = nullptr;
+        m_scratchb = nullptr;
         m_work_arr = nullptr;
     }
 
