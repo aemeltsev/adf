@@ -14,46 +14,46 @@
 
 namespace adf {
 
-/**
- * @brief The FilterType enum - the enumeration class for the type filter select
+/*!
+ * \brief The FilterType enum - the enumeration class for the type filter select
  */
 enum class FilterType
 {
-    UNDEF = 0, //Udefined filter type
-    LPF,       //Low-pass filter type
-    HPF,       //High-pass filter type
-    PBF,       //Band-pass filter type
-    SBF,       //Band-stop filter type
-    ERR        //Error
+    UNDEF = 0, /*!< Udefined filter type */
+    LPF,       /*!< Low-pass filter type */
+    HPF,       /*!< High-pass filter type */
+    PBF,       /*!< Band-pass filter type */
+    SBF,       /*!< Band-stop filter type */
+    ERR        /*!< Error */
 };
 
-/**
- * @brief The ApproxType enum - the enumeration class for select the approximation methods
+/*!
+ * \brief The ApproxType enum - the enumeration class for select the approximation methods
  */
 enum class ApproxType
 {
-    UNDEF = 0,  //Type of approximation is undefined
-    BUTTER,     //Butterworth approximation
-    CHEBY,      //Chebyshev approximation
-    ICHEBY,     //Inverse Chebyshev approximation
-    ELLIPT,     //elliptic approximation
-    ERR         //Error
+    UNDEF = 0,  /*!< Type of approximation is undefined */
+    BUTTER,     /*!< Butterworth approximation */
+    CHEBY,      /*!< Chebyshev approximation */
+    ICHEBY,     /*!< Inverse Chebyshev approximation */
+    ELLIPT,     /*!< Elliptic approximation */
+    ERR         /*!< Error */
 };
 
-/**
- * @brief Input specification for filter parameters,
+/*!
+ * \brief Input specification for filter parameters,
  *        these include the passband and stopband edge frequency
  *        (in freq_passband first value - frequency lower, second value - frequency upper,
  *        in freq_stopband the first value - frequency lower, the second value - frequency upper)
  *        and gains(in gain_passband and gain_stopband values)
  *        used double type by default
- * @param gain_passband
- * @param gain_stopband
- * @param freq_passband
- * @param freq_stopband
- * @param fsamp - sampe frequency for digital filter
- * @param gain - gain multiplier
- * @param order - order, length of filter
+ * \param gain_passband
+ * \param gain_stopband
+ * \param freq_passband
+ * \param freq_stopband
+ * \param fsamp - sampe frequency for digital filter
+ * \param gain - gain multiplier
+ * \param order - order, length of filter
  */
 template<typename T=double>
 struct FiltParam
@@ -66,8 +66,8 @@ struct FiltParam
   T gain;
 };
 
-/**
- * @class
+/*!
+ * \class
  */
 template<typename T=double>
 class CalcCoeffs
@@ -129,12 +129,12 @@ public:
     }
 };
 
-/**
- * @brief This the common value for all filter approximation methods
+/*!
+ * \brief This the common value for all filter approximation methods
  *        \f$\varepsilon_s / \varepsilon_p\f$
  *        \f$\varepsilon_s = 10.0^{-0.1*a_s}-1\f$ stopband gain adjustment factor and
  *        passband gain ratio \f$\varepsilon_p = 10.0^{-0.1*a_p}-1\f$
- * @return Ratio value of the suppression \f$(R_s)dB/\f$(R_p)dB\f$
+ * \return Ratio value of the suppression \f$(R_s)dB/\f$(R_p)dB\f$
  */
 template<typename T>
 T CalcCoeffs<T>::CommonKernel()
@@ -144,35 +144,35 @@ T CalcCoeffs<T>::CommonKernel()
     {
         throw std::invalid_argument(ADF_ERROR("Zero or negative gain value"));
     }
-    return ((std::pow(10.0,-0.1*m_fparam.gain_stopband.first)-1)/
-            (std::pow(10.0,-0.1*m_fparam.gain_passband.first)-1));
+    return ((std::pow(10.0, -0.1 * m_fparam.gain_stopband.first) - 1)/
+            (std::pow(10.0, -0.1 * m_fparam.gain_passband.first) - 1));
 }
 
-/**
- * @brief The normalization to relative of the passband cutoff frequency
+/*!
+ * \brief The normalization to relative of the passband cutoff frequency
  *        \f$\omega = \fract{f_1}{f_2}\f$
  *        The part of filter order calculation
- * @return Ratio value of the normalization by frequency
+ * \return Ratio value of the normalization by frequency
  */
 template <typename T>
 T CalcCoeffs<T>::FreqNorm()
 {
-    /**< Return ratio value */
+    /*!< Return ratio value */
     T ratio;
 
-    /**< Edge frequency variables */
-    auto&& wp1 = m_fparam.freq_passband.first; /**<pb freq lower */
-    auto&& wp2 = m_fparam.freq_passband.second; /**<pb freq upper */
-    auto&& ws1 = m_fparam.freq_stopband.first; /**<sb freq lower */
-    auto&& ws2 = m_fparam.freq_stopband.second; /**<sb freq upper */
+    /*!< Edge frequency variables */
+    auto&& wp1 = m_fparam.freq_passband.first; /*!<pb freq lower */
+    auto&& wp2 = m_fparam.freq_passband.second; /*!<pb freq upper */
+    auto&& ws1 = m_fparam.freq_stopband.first; /*!<sb freq lower */
+    auto&& ws2 = m_fparam.freq_stopband.second; /*!<sb freq upper */
 
     switch(m_sfilter)
     {
     case FilterType::LPF:
-        ratio = ws1/wp1;
+        ratio = ws1 / wp1;
         break;
     case FilterType::HPF:
-        ratio = wp1/ws1;
+        ratio = wp1 / ws1;
         break;
     case FilterType::PBF:
         if(ws1 > (wp1 * wp2) / ws2)
@@ -210,18 +210,17 @@ T CalcCoeffs<T>::FreqNorm()
     return ratio;
 }
 
-/**
- * @brief The order of the polynomial for the approximation,
+/*!
+ * \brief The order of the polynomial for the approximation,
  *        as defined in the filter specification, which is the order of the filter.
  *        As example Butterworth:
  *        \f( n \geq \frac{\log(\frac{\varepsilon_s^2}{\varepsilon_p^2})}{2\log(\frac{\omega_s}{\omega_p})} )\f
- * @return Order of the polynom value
  */
 template<typename T>
 void CalcCoeffs<T>::FilterOrder()
 {
-    T ratio_const, kernel_const,          /**< Temp values, */
-      ei_ratio_const, eiq_ratio_const,    /**< for elliptic approximation */
+    T ratio_const, kernel_const,          /*!< Temp values, */
+      ei_ratio_const, eiq_ratio_const,    /*!< for elliptic approximation */
       ei_kernel_const, eiq_kernel_const,
       order=0.;
 
@@ -240,18 +239,18 @@ void CalcCoeffs<T>::FilterOrder()
     case ApproxType::ELLIPT:
         ratio_const = 1/ratio;
 
-        if((ratio_const > .9999)||(ratio_const < 2e-8))
+        if((ratio_const > .9999)||(ratio_const < 2e-8)) //TODO fix
         {
             m_order = static_cast<std::size_t>(order);
             throw std::range_error(ADF_ERROR("The value to out of range"));
         }
 
-        kernel_const = 1/std::sqrt(kernel);
+        kernel_const = 1. / std::sqrt(kernel);
 
         ei_ratio_const = ellip_integral(ratio_const);
-        eiq_ratio_const = ellip_integral(std::sqrt(1-(ratio_const*ratio_const)));
+        eiq_ratio_const = ellip_integral(std::sqrt(1 - (ratio_const*ratio_const)));
         ei_kernel_const = ellip_integral(kernel_const);
-        eiq_kernel_const = ellip_integral(std::sqrt(1-(kernel_const*kernel_const)));
+        eiq_kernel_const = ellip_integral(std::sqrt(1 - (kernel_const*kernel_const)));
         order = (ei_ratio_const * eiq_kernel_const)/(eiq_ratio_const * ei_kernel_const);
         break;
     }
@@ -264,8 +263,8 @@ void CalcCoeffs<T>::FilterOrder()
     m_order = static_cast<std::size_t>(std::ceil(order));
 }
 
-/**
- * @brief 1. Calculate \f$( \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} )\f$
+/*!
+ * \brief 1. Calculate \f$( \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} )\f$
  *        2. Calculate radius: \f$( R = \varepsilon^{-1/n} )\f$
  *        3. In for cycle calculate stable function left-half-plane poles used:
  *           \f$(
@@ -279,19 +278,19 @@ void CalcCoeffs<T>::FilterOrder()
 template<typename T>
 void CalcCoeffs<T>::ButterApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bcoefs)
 {
-    //Determine ripple factor
+    //! Determine ripple factor
     auto epsilon = std::sqrt(std::pow(10.0, -0.1*m_fparam.gain_passband.first) - 1);
 
-    //Determine the Butterworth radius
+    //! Determine the Butterworth radius
     auto radius = std::pow(epsilon, -1.0/m_order);
 
-    //Default gain
+    //! Default gain
     m_fparam.gain = 1.;
 
-    //Counters
+    //! Counters
     std::size_t a=0, b=0;
 
-    //Work with the odd order
+    //! Work with the odd order
     if(m_order % 2){
         n_acoefs[a++] = 0.;
         n_acoefs[a++] = 0.;
@@ -300,17 +299,18 @@ void CalcCoeffs<T>::ButterApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bco
         n_bcoefs[b++] = 1.;
         n_bcoefs[b++] = radius;
     }
-    /**< Other all quadratic terms,  */
+    //! Other all quadratic terms
     for(std::size_t m=0; m<m_order/2; m++)
     {
-        /**< First determine the angle,
+        /*! First determine the angle,
          *  and then the position of the complex pole,
-         *  its real and imaginary values. */
+         *  its real and imaginary values.
+         */
         auto theta = ADF_PI*(2*m + m_order + 1) / (2*m_order);
         auto sigma = radius * std::cos(theta);
         auto omega = radius * std::sin(theta);
 
-        /**< Set the quadratic coefs */
+        //! Set the quadratic coefs
         n_acoefs[a++] = 0.;
         n_acoefs[a++] = 0.;
         n_acoefs[a++] = sigma*sigma + omega*omega;
@@ -320,8 +320,8 @@ void CalcCoeffs<T>::ButterApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bco
     }
 }
 
-/**
- * @brief 1. Calculate \f$( \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} )\f$
+/*!
+ * \brief 1. Calculate \f$( \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} )\f$
  *        2. Calculate radius(d): \f$( D = \frac{\sinh^{-1}(\varepsilon^{-1})}{n} )\f$
  *        3. Calculate angle:
  *           \f$(
@@ -335,16 +335,16 @@ void CalcCoeffs<T>::ButterApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bco
 template<typename T>
 void CalcCoeffs<T>::ChebyApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bcoefs)
 {
-    //Determine ripple factor
+    //!Determine ripple factor
     auto epsilon = std::sqrt(std::pow(10.0, -0.1*m_fparam.gain_passband.first) - 1.0);
 
-    //Determine minor axis radius of the ellipse
+    //!Determine minor axis radius of the ellipse
     auto d = asinh(1.0/epsilon) / m_order;
 
-    // Counters
+    //! Counters
     int32_t a=0, b=0;
 
-    /**< Work with the odd order */
+    //! Work with the odd order
     if(m_order % 2){
         m_fparam.gain = 1.;
         n_acoefs[a++] = 0.;
@@ -358,17 +358,18 @@ void CalcCoeffs<T>::ChebyApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bcoe
         m_fparam.gain = std::pow(10., 0.05*m_fparam.gain_passband.first);
     }
 
-    /**< Other all quadratic terms */
+    //! Other all quadratic terms
     for(int32_t m=0; m<m_order/2; m++)
     {
-        /**< First determine the angle,
+        /*! First determine the angle,
          *  and then the position of the complex pole,
-         *  its real and imaginary values. */
+         *  its real and imaginary values.
+         */
         auto phi = ADF_PI*(2*m + 1) / (2*m_order);
         auto sigma = -1 * sinh(d) * std::sin(phi);
         auto omega = cosh(d) * std::cos(phi);
 
-        /**< Set the quadratic coefs */
+        //! Set the quadratic coefs
         n_acoefs[a++] = 0.;
         n_acoefs[a++] = 0.;
         n_acoefs[a++] = sigma*sigma + omega*omega;
@@ -378,8 +379,8 @@ void CalcCoeffs<T>::ChebyApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bcoe
     }
 }
 
-/**
- * @brief 1. Calculate \f$ \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} \f$
+/*!
+ * \brief 1. Calculate \f$ \varepsilon = \sqrt[]{\left( 10^{^{A_p}/_{10}}-1 \right)} \f$
  *        2. Check type filter for calculate the normalized cutoff frequency ratio
  *        3. Calculate kernel ratio, and temp variables
  *           \f$ v_0 = -\frac{j}{NK_1}sn^{-1} \bigg( \frac{j}{\varepsilon_p}, k_1 \bigg) \f$
@@ -388,14 +389,14 @@ void CalcCoeffs<T>::ChebyApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bcoe
 template<typename T>
 void CalcCoeffs<T>::ElliptApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bcoefs)
 {
-      T ratio,                            /**< Check type filter frequency value */
-      sp, cp, dp,                       /**< Sn cn dn Jacobi elliptic functions */
+      T ratio,                          /*!< Check type filter frequency value */
+      sp, cp, dp,                       /*!< Sn cn dn Jacobi elliptic functions */
       sn, cn, dn;
 
-    // The attenuation unevenness ratio in passband - \f$ \varepsilon \f$ (Ripple factor)
+    //! The attenuation unevenness ratio in passband - \f$ \varepsilon \f$ (Ripple factor)
     auto epsilon = std::sqrt(std::pow(10., -0.1*m_fparam.gain_passband.first) - 1);
 
-    // Normalized cutoff fre\f$quency ratio
+    //! Normalized cutoff fre\f$quency ratio
     switch (m_sfilter)
     {
     case FilterType::LPF:
@@ -418,24 +419,25 @@ void CalcCoeffs<T>::ElliptApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bco
         break;
     }
 
-    /* Dimopoulos H.G.-Analog Electronic Filters.Theory, Design and Synthesis.
-     *  pp. 180. Specifications and the Order of the Elliptic Approximation */
+    /*! Dimopoulos H.G.-Analog Electronic Filters.Theory, Design and Synthesis.
+     *  pp. 180. Specifications and the Order of the Elliptic Approximation
+     */
     auto kernel = CommonKernel();
     auto ratio_const = 1/ratio;
     auto kernel_const = 1/std::sqrt(kernel);
 
-    //The complete elliptic integrals of the modules ratio and kernel
-    auto ei_ratio_const = ellip_integral(ratio_const); //K(k)
-    auto ei_kernel_const = ellip_integral(kernel_const); //K(g)
+    //! The complete elliptic integrals of the modules ratio and kernel
+    auto ei_ratio_const = ellip_integral(ratio_const);   //! K(k)
+    auto ei_kernel_const = ellip_integral(kernel_const); //! K(g)
 
-    //Variable vo used in the calculation of the pole and zero locations
-    auto vo = (ei_ratio_const / (ei_kernel_const * m_order)) * arcsc(1/epsilon, kernel_const); //N(d)
+    //! Variable vo used in the calculation of the pole and zero locations
+    auto vo = (ei_ratio_const / (ei_kernel_const * m_order)) * arcsc(1/epsilon, kernel_const); //! N(d)
     ellip_funcs(vo, std::sqrt(1-(ratio_const*ratio_const)), sp, cp, dp);
 
-    // Counters
+    //! Counters
     int32_t a=0, b=0;
 
-    //Check odd filter order value
+    //! Check odd filter order value
     auto odd = m_order % 2;
     if(odd){
         m_fparam.gain = 1.;
@@ -450,21 +452,21 @@ void CalcCoeffs<T>::ElliptApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bco
         m_fparam.gain = std::pow(10., 0.05 * m_fparam.gain_passband.first);
     }
 
-    /**< Other all quadratic terms */
+    //! Other all quadratic terms
     for(int32_t m=0; m<m_order/2; m++)
     {
-        //Define fm variable using in calculation of the real and image parts
+        //! Define fm variable using in calculation of the real and image parts
         auto fm = ei_ratio_const * (2*m + 1 + odd) / m_order;
         ellip_funcs(fm, ratio_const, sn, cn, dn);
 
-        //Calculated real and imag coordinates of poles
+        //! Calculated real and imag coordinates of poles
         auto sigma = -1 * cn*dn*sp*cp /(1 - dn*dn*sp*sp);
         auto omega = sn*dp / (1 - dn*dn*sp*sp);
 
-        //Calculated the zero location
+        //! Calculated the zero location
         auto zero = 1 / (ratio_const * sn);
 
-        /**< Set the quadratic coefs */
+        //! Set the quadratic coefs
         n_acoefs[a++] = 1.;
         n_acoefs[a++] = 0.;
         n_acoefs[a++] = zero*zero;
@@ -472,13 +474,13 @@ void CalcCoeffs<T>::ElliptApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bco
         n_bcoefs[b++] = -2*sigma;
         n_bcoefs[b++] = sigma*sigma + omega*omega;
 
-        /**< Update the gain */
+        //! Update the gain
         m_fparam.gain *=((sigma*sigma + omega*omega)/(zero*zero));
     }
 }
 
-/**
- * @brief IChebyApprox - Type II Chebyshev filter also inverse Chebyshev filter
+/*!
+ * \brief IChebyApprox - Type II Chebyshev filter also inverse Chebyshev filter
  *        See details Dimopoulos H.G.-Analog Electronic Filters.Theory, Design and Synthesis.
  *        pp. 110
  *        The Inverse Chebyshev Approximation
@@ -486,19 +488,19 @@ void CalcCoeffs<T>::ElliptApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bco
 template<typename T>
 void CalcCoeffs<T>::IChebyApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bcoefs)
 {
-    T  mag_inv,            /**< Using for inverse magnitude value */
-      phi, sigma, omega,  /**< Real and image position in s-domain value \f$( s = \sigma + j\omega) */
-      zero;               /**< Zero value */
+    T  mag_inv,            /*!< Using for inverse magnitude value */
+      phi, sigma, omega,   /*!< Real and image position in s-domain value \f$( s = \sigma + j\omega) */
+      zero;                /*!< Zero value */
 
     auto epsilon = std::sqrt(std::pow(10.0, -0.1*m_fparam.gain_stopband.first) - 1.);
     auto d = asinh(1/epsilon) / m_order;
 
     m_fparam.gain = 1.;
 
-    //Counters
+    //! Counters
     int32_t a=0, b=0;
 
-    //For the odd order - first order pole on the negative real axis */
+    //! For the odd order - first order pole on the negative real axis
     if(m_order % 2){
         n_acoefs[a++] = 0.;
         n_acoefs[a++] = 0.;
@@ -508,25 +510,25 @@ void CalcCoeffs<T>::IChebyApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bco
         n_bcoefs[b++] = 1 / sinh(d);
     }
 
-    /**< Other all quadratic terms */
+    //! Other all quadratic terms
     for(int32_t m=0; m<m_order/2; m++)
     {
-        //Calculate angle
+        //! Calculate angle
         auto phi = ADF_PI*(2*m + 1) / (2*m_order);
 
-        //Next the pole location values must be inverted */
+        //! Next the pole location values must be inverted
         auto isigma = -1 * sinh(d) * std::sin(phi);
         auto iomega = cosh(d) * std::cos(phi);
 
-        //And calculate final pole locations
+        //! And calculate final pole locations
         mag_inv = iomega*iomega + isigma*isigma;
         omega = -1 * iomega/mag_inv;
         sigma = isigma/mag_inv;
 
-        //Calculate the zero location
+        //! Calculate the zero location
         zero = 1. / std::cos(phi);
 
-        /**< Set the quadratic coefs */
+        //! Set the quadratic coefs
         mag_inv = omega*omega + sigma*sigma;
         n_acoefs[a++] = 1.;
         n_acoefs[a++] = 0.;
@@ -535,13 +537,13 @@ void CalcCoeffs<T>::IChebyApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bco
         n_bcoefs[b++] = -2*sigma;
         n_bcoefs[b++] = mag_inv;
 
-        /**< Update the gain */
+        //! Update the gain
         m_fparam.gain *= (mag_inv / (zero * zero));
     }
 }
 
-/**
- * @brief
+/*!
+ * \brief
  */
 template<typename T>
 void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
@@ -551,20 +553,20 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
                                   const T un_bandwith,
                                   const T un_centrfreq)
 {
-    std::size_t origin_qd_count,                         /**< Original number of quads values */
-                origin_order;                            /**< Original order */
-    std::size_t origin_coef, new_coef, pos_start;        /**< Counters */
-    std::size_t size_coef;                               /**< Size vector value */
-    complex<T> A, B, C, D, E;                            /**< Temp complex value */
+    std::size_t origin_qd_count,                         /*!< Original number of quads values */
+                origin_order;                            /*!< Original order */
+    std::size_t origin_coef, new_coef, pos_start;        /*!< Counters */
+    std::size_t size_coef;                               /*!< Size vector value */
+    complex<T> A, B, C, D, E;                            /*!< Temp complex value */
 
-    /**
+    /*!
       Store the original number of the order,
       new order will be twice large to original
     */
     origin_order = m_order;
     origin_qd_count = (origin_order + 1) / 2;
     m_order = origin_order * 2;
-    /**<  */
+    /*!<  */
     size_coef = 3*origin_order;
 
     //filling input vectors to default values
@@ -576,8 +578,9 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
         un_acoefs.push_back(0);
     }
 
-    /**< If original order is odd convert first order factor to quadratic,
-     *  pos_start indicate start point for loop */
+    /*! If original order is odd convert first order factor to quadratic,
+     *  pos_start indicate start point for loop
+     */
     if(origin_order % 2)
     {
         m_fparam.gain *= (n_acoefs[2] / n_bcoefs[2]);
@@ -594,7 +597,7 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
         pos_start = 0;
     }
 
-    /**<  */
+    /*!<  */
     for(std::size_t qd_count = pos_start; qd_count < origin_qd_count; qd_count++)
     {
         origin_coef = qd_count * 3;
@@ -610,10 +613,10 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
             un_acoefs[new_coef+4] = 0.;
             un_acoefs[new_coef+5] = un_centrfreq * un_centrfreq;
         }
-        /**<  */
+        /*!<  */
         else
         {
-            /**< Convert coefficients to complex, then factorization */
+            //! Convert coefficients to complex, then factorization
             A = complex<T>(n_acoefs[origin_coef], 0);
             B = complex<T>(n_acoefs[origin_coef+1], 0);
             C = complex<T>(n_acoefs[origin_coef+2], 0);
@@ -622,7 +625,7 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
             D = complex<T>(first_comp_quad.first);
             E = complex<T>(first_comp_quad.second);
 
-            /**< Make required substitutions, factorization again */
+            //! Make required substitutions, factorization again
             complex<T> mul_tmp(un_bandwith, 0);
             complex<T> num_tmp(1, 0);
             complex<T> fr_tmp, result;
@@ -637,7 +640,7 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
             D = complex<T>(second_comp_quad.first);
             E = complex<T>(second_comp_quad.second);
 
-            /**< Determine final values for new coefficients */
+            //! Determine final values for new coefficients
             un_acoefs[new_coef] = 1.;
             un_acoefs[new_coef+1] = -2. * D.getReal();
             auto d_conj = D.conj();
@@ -658,7 +661,7 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
         D = std::move(first_comp_quad.first);
         E = std::move(first_comp_quad.second);
 
-        /**< Make required substitutions, factorization again */
+        //! Make required substitutions, factorization again
         complex<T> mul_tmp(un_bandwith, 0);
         complex<T> num_tmp(1, 0);
         complex<T> fr_tmp, result;
@@ -682,8 +685,8 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
     }
 }
 
-/**
- * @brief
+/*!
+ * \brief
  */
 template<typename T>
 void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
@@ -693,23 +696,23 @@ void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
                                   const T un_bandwith,
                                   const T un_centrfreq)
 {
-    std::size_t origin_qd_count,                         /**< Original number of quads values */
-                origin_order;                            /**< Original order */
-    std::size_t origin_coef, new_coef, pos_start;        /**< Counters */
-    std::size_t size_coef;                               /**< Size vector value */
-    complex<T> A, B, C, D, E;                            /**< Temp complex value */
+    std::size_t origin_qd_count,                         /*!< Original number of quads values */
+                origin_order;                            /*!< Original order */
+    std::size_t origin_coef, new_coef, pos_start;        /*!< Counters */
+    std::size_t size_coef;                               /*!< Size vector value */
+    complex<T> A, B, C, D, E;                            /*!< Temp complex value */
 
-    /**
+    /*!
       Store the original number of the order,
       new order will be twice large to original
     */
     origin_order = m_order;
     origin_qd_count = (origin_order + 1) / 2;
     m_order = origin_order * 2;
-    /**<  */
-    size_coef = 3*origin_order;
+    /*!<  */
+    size_coef = 3 * origin_order;
 
-    //filling input vectors to default values
+    //! filling input vectors to default values
     un_acoefs.reserve(size_coef);
     un_bcoefs.reserve(size_coef);
     for(std::size_t ind=0; ind<size_coef; ++ind)
@@ -718,8 +721,9 @@ void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
         un_acoefs.push_back(0);
     }
 
-    /**< If original order is odd convert first order factor to quadratic,
-     * pos_start indicate start point for loop */
+    /*! If original order is odd convert first order factor to quadratic,
+     * pos_start indicate start point for loop
+     */
     if(origin_order % 2)
     {
         un_acoefs[0] = n_acoefs[1];
@@ -735,10 +739,11 @@ void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
         pos_start = 0;
     }
 
-    /**< */
+    /*!< */
     for(std::size_t qd_count = pos_start; qd_count < origin_qd_count; qd_count++)
     {
-        /**< origin_coef - for indexing original coefficients, every 3 per original coeffs from origin_qd_count
+        /*! origin_coef - for indexing original coefficients,
+         *   every 3 per original coeffs from origin_qd_count
          *
          */
         origin_coef = qd_count * 3;
@@ -753,10 +758,10 @@ void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
             un_acoefs[new_coef+4] = std::sqrt(n_acoefs[origin_coef+2]) * un_bandwith;
             un_acoefs[new_coef+5] = 0.;
         }
-        /**< */
+        /*!< */
         else
         {
-            /**< Convert coefficients to complex, then factorization */
+            //! Convert coefficients to complex, then factorization
             A = complex<T>(n_acoefs[origin_coef], 0);
             B = complex<T>(n_acoefs[origin_coef+1], 0);
             C = complex<T>(n_acoefs[origin_coef+2], 0);
@@ -765,7 +770,7 @@ void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
             D = complex<T>(first_comp_quad.first);
             E = complex<T>(first_comp_quad.second);
 
-            /**< Make required substitutions, factorization again */
+            //! Make required substitutions, factorization again
             complex<T> mul_tmp(un_bandwith, 0);
             complex<T> num_tmp(1, 0);
             complex<T> fr_tmp, result;
@@ -780,7 +785,7 @@ void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
             D = complex<T>(second_comp_quad.first);
             E = complex<T>(second_comp_quad.second);
 
-            /**< Determine final values for new coefficients */
+            //! Determine final values for new coefficients
             un_acoefs[new_coef] = 1.;
             un_acoefs[new_coef+1] = -2. * D.getReal();
             auto d_conj = D.conj();
@@ -793,7 +798,7 @@ void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
             un_acoefs[new_coef+5] = sc_real.getReal();
         }
 
-        /**<  */
+        /*!<  */
         A = complex<T>(n_bcoefs[origin_coef], 0);
         B = complex<T>(n_bcoefs[origin_coef+1], 0);
         C = complex<T>(n_bcoefs[origin_coef+2], 0);
@@ -802,7 +807,7 @@ void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
         D = std::move(first_comp_quad.first);
         E = std::move(first_comp_quad.second);
 
-        /**< Make required substitutions, factorization again */
+        //! Make required substitutions, factorization again
         complex<T> mul_tmp(un_bandwith, 0);
         complex<T> num_tmp(1, 0);
         complex<T> fr_tmp, result;
@@ -826,8 +831,8 @@ void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
     }
 }
 
-/**
- * @brief Method the denormalization of coefficients by frequency and
+/*!
+ * \brief Method the denormalization of coefficients by frequency and
  *        impedance for high-pass filter type:
  *        \f[
  *             S(h) = \frac{\omega_0}{s} \bigg( \frac{\omega_{PB}}{s_n} \bigg)
@@ -841,12 +846,12 @@ void CalcCoeffs<T>::HPCoefsUnnorm(std::vector<T> &n_acoefs,
                                   std::vector<T> &un_bcoefs,
                                   const T freq)
 {
-    /**< Number of coefficient, and position start */
+    /*!< Number of coefficient, and position start */
     std::size_t coef_numb,
             pos_start,
             qd_count;
 
-    /**< First order type, if odd, set start position */
+    /*!< First order type, if odd, set start position */
     if(m_order % 2)
     {
         m_fparam.gain *= (n_acoefs[2]/n_bcoefs[2]);
@@ -873,8 +878,8 @@ void CalcCoeffs<T>::HPCoefsUnnorm(std::vector<T> &n_acoefs,
     }
 }
 
-/**
- * @brief Method the denormalization of coefficients by frequency and
+/*!
+ * \brief Method the denormalization of coefficients by frequency and
  *        impedance for low-pass filter type:
  *        \f[
  *             Z_s = z_0 \times Z_n(\omega_{PB} \times  s_n)
@@ -897,7 +902,7 @@ void CalcCoeffs<T>::LPCoefsUnnorm(std::vector<T> &n_acoefs,
             qd_count,
             pos_start;
 
-    /**< First check order type, if odd, set start position to 1 else to 0 */
+    /*!< First check order type, if odd, set start position to 1 else to 0 */
     if(m_order % 2)
     {
         un_acoefs[2] = n_acoefs[2]*freq;

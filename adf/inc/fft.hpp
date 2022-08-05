@@ -20,7 +20,7 @@ class FFT
 private:
     int m_vec_size;
     int m_log2_vec_size;
-    enum m_direction {forward, inverse};
+    //enum m_direction {forward, inverse};
     complex<T> *m_uforward, *m_uinverse;
     complex<T> *m_workspace;
     int *m_permindex;
@@ -502,15 +502,16 @@ public:
 };
 
 /*!
- *
+ * 2D-FFT radix-r non-recursive algorithm
  */
 template<typename T = double>
 class FFTR2D
 {
 private:
-    // Relative speed of ForwardCR as compared to ForwardRC.
-    // If bigger than 1, then ForwardCR is
-    // faster.  This will be machine & compiler dependent...oh well.
+    /*! Relative speed of ForwardCR as compared to ForwardRC.
+     *  If bigger than 1, then ForwardCR is faster.
+     *  This will be machine & compiler dependent...oh well.
+    */
     static constexpr double m_crrc_speed_ratio = 1.10;
 
     int m_vec_size1, m_vec_size2; /*!< Dimensions of full-sized real array.*/
@@ -528,7 +529,7 @@ private:
 public:
 
     /*!
-     * \brief ReleaseMemory
+     * \brief ReleaseMemory cleaning memory
      */
     void ReleaseMemory()
     {
@@ -1224,6 +1225,9 @@ private:
     }
 
 public:
+    /*!
+     * \brief FFTR2D ctor
+     */
     FFTR2D()
     {
         m_vec_size1 = m_vec_size2 = 0;
@@ -1233,111 +1237,150 @@ public:
         m_work_arr = nullptr;
     }
 
+    /*!
+     * \brief FFTR2D dtor
+     */
     ~FFTR2D()
     {
         ReleaseMemory();
     }
 
-    // Forward 2D-FFT.
-    // Computes FFT of rsize1 x rsize2 double** rarr, leaving result in
-    // csize1 x csize2 MyComplex** carr.  rsize2 *must* be <= csize2, and
-    // rsize1 *must* be <= 2*(csize1-1).  This routine returns only the
-    // top half +1 of the transform.  The bottom half is given by
-    //      carr[2*(csize1-1)-i][csize2-j]=conj(carr[i][j])
-    // for i>=csize1, with the second indices interpreted 'mod csize2'.
-    // The client can pass a full-sized top-half-filled MyComplex** carr
-    // arr to the FFTReal2D member function "FillOut" to perform
-    // this operation...
-    //  NOTE: The Microsoft Visual C++ compiler apparently doesn't want to
-    // automatically convert from (double**) to (const double* const*), so
-    // you will need to put in an explicit cast for that compiler (and it
-    // does no harm in any case).
-    void Forward(int rsize1, int rsize2,
+    /*!
+     * \brief Forward - Forward 2D-FFT.
+     *                  Computes FFT of rsize1 x rsize2 T** rarr, leaving result in
+     *                  csize1 x csize2 complex<T>** carr.  rsize2 *must* be <= csize2, and
+     *                  rsize1 *must* be <= 2*(csize1-1).  This routine returns only the
+     *                  top half +1 of the transform.  The bottom half is given by
+     *                            carr[2*(csize1-1)-i][csize2-j]=conj(carr[i][j])
+     *                  for i>=csize1, with the second indices interpreted 'mod csize2'.
+     *                  The client can pass a full-sized top-half-filled complex<T>** carr
+     *                  arr to the FFTReal2D member function "FillOut" to perform
+     *                  this operation...
+     * \param rsize1 - dimension of input array
+     * \param rsize2 - dimension of input array
+     * \param rarr - input 2 dimension array
+     * \param csize1 - dimension of output array
+     * \param csize2 - dimension of output array
+     * \param carr - output result array with complex values
+     */
+    void Forward(int rsize1,
+                 int rsize2,
                  const double* const* rarr,
-                 int csize1, int csize2, complex<T>** carr)
+                 int csize1,
+                 int csize2,
+                 complex<T>** carr)
     {
-        if(csize2<rsize2)
-          PlainError(1,"Error in FFTRealD::Forward(int,int,double**,int,int,MyComplex**): "
-               "csize2 (=%d) *must* be >= rsize2 (=%d)\n",csize2,rsize2);
+        if(csize2 < rsize2)
+        {
+            ADF_ERROR("Error in FFTRealD::Forward(int, int, T**, int, int, complex<T>**):"
+                      "csize2 must be >= rsize2\n");
+        }
 
-        if(csize1<(rsize1/2)+1)
-          PlainError(1,"Error in FFTRealD::Forward(int,int,double**,int,int,MyComplex**): "
-               "csize1 (=%d) *must* be >= (rsize1/2)+1 (=%d)\n",
-               csize1,(rsize1/2)+1);
+        if(csize1 < (rsize1 / 2) + 1)
+        {
+            ADF_ERROR("Error in FFTRealD::Forward(int, int, T**, int, int, complex<T>**): "
+                      "csize1 must be >= (rsize1/2)+1\n");
+        }
 
-        Setup(2*(csize1-1),csize2);
-        if(vecsize1==0 || vecsize2==0) return; // Nothing to do
+        Setup( 2 * (csize1 - 1), csize2);
+        if(m_vec_size1 == 0 || m_vec_size2 == 0) return; /*!< Nothing to do */
 
-        // Determine which Forward routine to call (ForwardCR or ForwardRC)
-        // (Use double arithmetic to protect against integer overflow.  If
-        // the two times are very close, then the choice doesn't really
-        // matter.)
-        // 1) Estimated (proportional) time for ForwardCR
-        double crtime=double(vecsize1*vecsize2)*double(logsize2)
-                    + double(vecsize1*rsize2)*double(logsize1);
-        // 2) Estimated (proportional) time for ForwardRC
-        double rctime=double(rsize1*vecsize2)*double(logsize2)
-                    + double(vecsize1*vecsize2)*double(logsize1);
-        // Introduce empirical adjustment factor
-        rctime*=CRRCspeedratio;
+        /*!
+         * Determine which Forward routine to call (ForwardCR or ForwardRC)
+         * (Use double arithmetic to protect against integer overflow.  If
+         * the two times are very close, then the choice doesn't really
+         * matter.)
+         */
+        //! 1) Estimated (proportional) time for ForwardCR
+        T crtime = static_cast<T>(m_vec_size1 * m_vec_size2) * static_cast<T>(m_log_size2)
+                   + static_cast<T>(m_vec_size1 * rsize2) * static_cast<T>(m_log_size1);
 
-        if(crtime<=rctime) ForwardCR(rsize1,rsize2,rarr,csize1,csize2,carr);
-        else               ForwardRC(rsize1,rsize2,rarr,csize1,csize2,carr);
+        //! 2) Estimated (proportional) time for ForwardRC
+        T rctime = static_cast<T>(rsize1 * m_vec_size2) * static_cast<T>(m_log_size2)
+                   + static_cast<T>(m_vec_size1 * m_vec_size2) * static_cast<T>(m_log_size1);
+
+        //! Introduce empirical adjustment factor
+        rctime *= m_crrc_speed_ratio;
+
+        if(crtime <= rctime) ForwardCR(rsize1, rsize2, rarr, csize1, csize2, carr);
+        else                 ForwardRC(rsize1, rsize2, rarr, csize1, csize2, carr);
     }
 
-    // See previous note.  Here csize1 is the full array height, and the
-    // top (csize1/2)+1 rows are assumed already filled.
+    /*!
+     * \brief FillOut - See previous note.
+     *                  Here csize1 is the full array height, and the
+     *                  top (csize1/2)+1 rows are assumed already filled.
+     *                  This routine assumes carr is a top-half-filled DFT
+     *                  of a real function, and fills in the bottom half
+     *                  using the relation
+     *                  carr[csize1-i][csize2-j]=conj(carr[i][j])
+     *                  for i > csize1 / 2, with the second indices
+     *                  interpreted 'mod csize2'.
+     * \param csize1 - dimension of input array
+     * \param csize2 - dimension of input array
+     * \param carr - input 2 dimension array with complex coeff
+     */
     void FillOut(int csize1, int csize2, complex<T>** carr)
     {
-        // This routine assumes carr is a top-half-filled DFT of
-        // a real function, and fills in the bottom half using the
-        // relation
-        //      carr[csize1-i][csize2-j]=conj(carr[i][j])
-        // for i>csize1/2, with the second indices interpreted 'mod csize2'.
         for(auto i = 1; i < csize1 / 2; ++i)
         {
-            carr[csize1 - i][0] = carr[i][0]->conj();
+            carr[csize1 - i][0] = carr[i][0].conj();
             for(auto j = 1; j < csize2; ++j)
             {
-                carr[csize1-i][j] = carr[i][csize2-j]->conj();
+                carr[csize1-i][j] = carr[i][csize2-j].conj();
             }
         }
     }
 
-
-    // Inverse 2D-FFT.  See notes to '::Forward', including the
-    // const* note for MVC++.
-    void Inverse(int csize1, int csize2,
+    /*!
+     * \brief Inverse - Inverse 2D-FFT. See notes to '::Forward'
+     * \param csize1 - dimension of input array
+     * \param csize2 - dimension of input array
+     * \param carr - input 2 dimension array with complex coeff
+     * \param rsize1 - dimension of output array
+     * \param rsize2 - dimension of output array
+     * \param rarr - output 2 dimension array
+     */
+    void Inverse(int csize1,
+                 int csize2,
                  const complex<T>* const* carr,
-                 int rsize1, int rsize2, double** rarr)
+                 int rsize1,
+                 int rsize2,
+                 double** rarr)
     {
-        if(csize2<rsize2)
-          PlainError(1,"Error in FFTRealD::Inverse(int,int,double**,int,int,MyComplex**): "
-               "csize2 (=%d) *must* be >= rsize2 (=%d)\n",csize2,rsize2);
+        if(csize2 < rsize2)
+        {
+            ADF_ERROR("Error in FFTRealD::Inverse(int, int, T**, int, int, complex<T>**): "
+                      "csize2 (=%d) *must* be >= rsize2 (=%d)\n");
+        }
 
-        if(csize1<(rsize1/2)+1)
-          PlainError(1,"Error in FFTRealD::Inverse(int,int,double**,int,int,MyComplex**): "
-               "csize1 (=%d) *must* be >= (rsize1/2)+1 (=%d)\n",
-               csize1,(rsize1/2)+1);
+        if(csize1 < (rsize1 / 2) + 1)
+        {
+          ADF_ERROR("Error in FFTRealD::Inverse(int,int,T**,int,int,complex<T>**): "
+                    "csize1 *must* be >= (rsize1/2)+1\n");
+        }
 
-        SetupInverse(2*(csize1-1),csize2);
-        if(vecsize1==0 || vecsize2==0) return; // Nothing to do
+        SetupInverse(2 * (csize1 - 1), csize2);
+        if(m_vec_size1 == 0 || m_vec_size2 == 0) return; /*!< Nothing to do */
 
-        // Determine which Inverse routine to call (InverseRC or InverseCR)
-        // (Use double arithmetic to protect against integer overflow.  If
-        // the two times are very close, then the choice doesn't really
-        // matter.)
-        // 1) Estimated (proportional) time for InverseRC (==ForwardCR)
-        double irctime=double(vecsize1*vecsize2)*double(logsize2)
-                    + double(vecsize1*rsize2)*double(logsize1);
-        // 2) Estimated (proportional) time for InverseCR (==ForwardRC)
-        double icrtime=double(rsize1*vecsize2)*double(logsize2)
-                    + double(vecsize1*vecsize2)*double(logsize1);
-        // Introduce empirical adjustment factor
-        icrtime*=CRRCspeedratio;
+        /*! Determine which Inverse routine to call (InverseRC or InverseCR)
+         *  (Use double arithmetic to protect against integer overflow.  If
+         *  the two times are very close, then the choice doesn't really
+         *  matter.)
+        */
+        //! 1) Estimated (proportional) time for InverseRC (==ForwardCR)
+        T irctime = static_cast<T>(m_vec_size1 * m_vec_size2) * static_cast<T>(m_log_size2)
+                    + static_cast<T>(m_vec_size1 * rsize2) * static_cast<T>(m_log_size1);
 
-        if(irctime<=icrtime) InverseRC(csize1,csize2,carr,rsize1,rsize2,rarr);
-        else                 InverseCR(csize1,csize2,carr,rsize1,rsize2,rarr);
+        //! 2) Estimated (proportional) time for InverseCR (==ForwardRC)
+        T icrtime = static_cast<T>(rsize1 * m_vec_size2) * static_cast<T>(m_log_size2)
+                    + static_cast<T>(m_vec_size1 * m_vec_size2) * static_cast<T>(m_log_size1);
+
+        //! Introduce empirical adjustment factor
+        icrtime *= m_crrc_speed_ratio;
+
+        if(irctime <= icrtime) InverseRC(csize1, csize2, carr, rsize1, rsize2, rarr);
+        else                   InverseCR(csize1, csize2, carr, rsize1, rsize2, rarr);
     }
 };
 

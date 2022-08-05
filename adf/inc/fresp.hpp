@@ -12,12 +12,18 @@
 
 namespace adf {
 
+/*!
+ * \brief The Scale enum -
+ */
 enum class Scale
 {
-    LOG, //Logarithmic scale
-    LIN  //Linear scale
+    LOG, /*!< Logarithmic scale */
+    LIN  /*!< Linear scale */
 };
 
+/*!
+ * \brief The FResolution enum -
+ */
 enum class FResolution
 {
     HIGH=1,
@@ -25,27 +31,30 @@ enum class FResolution
     LOW=3
 };
 
+/*!
+ * \class Response -
+ */
 template<typename T=double>
 class Response
 {
-    /*Common fiels initialize*/
-    T m_start_freq = 0.; //start frequency for response
-    T m_stop_freq = 0.; //end frequency for response
-    T m_gain_min = 0.; //min gain to display
+    //!Common fiels initialize
+    T m_start_freq = 0.;    /*!< start frequency for response */
+    T m_stop_freq = 0.;     /*!< end frequency for response */
+    T m_gain_min = 0.;      /*!< min gain to display */
     std::size_t m_decades=0;
     std::size_t m_dec_pts=0;
     std::size_t m_tot_pts=0;
     Scale m_frq;
     Scale m_mag;
     
-    /*Field for estimation during initialization and fields used for subsequent calculations*/
+    //! Field for estimation during initialization and fields used for subsequent calculations
     std::size_t m_resolution=0;
     T m_ratio=0.;
-    std::vector<T> m_freq; //frequency values
-    std::vector<T> m_magn; //output magnitude values
-    std::vector<T> m_angl; //output phase values
-    std::vector<T> m_edge_magn; //edge frequency magnitudes
-    std::vector<T> m_edge_angl; //edge frequency phases
+    std::vector<T> m_freq;       /*!< frequency values */
+    std::vector<T> m_magn;       /*!< output magnitude values */
+    std::vector<T> m_angl;       /*!< output phase values */
+    std::vector<T> m_edge_magn;  /*!< edge frequency magnitudes */
+    std::vector<T> m_edge_angl;  /*!< edge frequency phases */
     std::size_t m_num_edge_freq;
 
     void ResponseInit();
@@ -93,19 +102,22 @@ public:
     //std::size_t getNumEdgeFrequency();
 };
 
+/*!
+ * \brief ResponseInit -
+ */
 template<typename T>
 void Response<T>::ResponseInit()
 {
-    //Determine the numbers point of frequencies, depending on the resolution of the response
+    //! Determine the numbers point of frequencies, depending on the resolution of the response
     m_tot_pts = static_cast<std::size_t>(ADF_MAX_PTR / static_cast<std::size_t>(std::pow(2., m_resolution-1)));
-    //Response min gain
+    //! Response min gain
     m_gain_min = 10.0 * std::floor(m_gain_min/10.01);
-    //Determine if magnitude should be lin or log
+    //! Determine if magnitude should be linear or logarithmic
     if(m_gain_min >= -0.001)
         m_mag = Scale::LIN;
     else
         m_mag = Scale::LOG;
-    //Determine lin or log frequency scale
+    //! Determine lin or log frequency scale
     m_ratio = static_cast<std::size_t>(m_stop_freq/m_start_freq);
 
     if(m_ratio >= 10)
@@ -128,6 +140,9 @@ void Response<T>::ResponseInit()
     }
 }
 
+/*!
+ * \brief VectorFill -
+ */
 template<typename T>
 void Response<T>::VectorFill()
 {
@@ -165,6 +180,13 @@ void Response<T>::VectorFill()
     }
 }
 
+/*!
+ * \brief respAnalog -
+ * \param a_coeff -
+ * \param b_coeff -
+ * \param order -
+ * \param gain -
+ */
 template<typename T>
 void Response<T>::respAnalog(std::vector<T>& a_coeff, std::vector<T>& b_coeff, const std::size_t order, const T gain)
 {
@@ -180,7 +202,7 @@ void Response<T>::respAnalog(std::vector<T>& a_coeff, std::vector<T>& b_coeff, c
         for(std::size_t qind=0; qind<(order+1)/2; ++qind)
         {
             auto cindx = qind * 3;
-            //Numerator
+            //! Numerator
             auto real = a_coeff[cindx + 2] - a_coeff[cindx] * pow2omega;
             auto imag = a_coeff[cindx + 1] * omega;
             auto mag = std::sqrt(real*real + imag*imag);
@@ -190,7 +212,7 @@ void Response<T>::respAnalog(std::vector<T>& a_coeff, std::vector<T>& b_coeff, c
             {
                 m_angl[find] += std::atan2(imag, real);
             }
-            //Denominator
+            //! Denominator
             real = b_coeff[cindx + 2] - b_coeff[cindx] * pow2omega;
             imag = b_coeff[cindx + 1] * omega;
             mag = std::sqrt(real*real + imag*imag);

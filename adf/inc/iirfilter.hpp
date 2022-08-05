@@ -18,17 +18,17 @@ class DigIIRFilter
     FilterType m_ftype;
     ApproxType m_atype;
     std::size_t m_order = 0;
-    std::vector<T> n_acoefs, n_bcoefs; /**< to normalise coefs */
-    std::vector<T> un_acoefs, un_bcoefs; /**< to unnormalise coefs */
+    std::vector<T> n_acoefs, n_bcoefs; /*!< to normalise coefs */
+    std::vector<T> un_acoefs, un_bcoefs; /*!< to unnormalise coefs */
 
-    /**
-     * @brief setFilterParam Filling data fields of the
-     * @param g_passband - the passband gain ripple
-     * @param g_stopband - the stopband gain ripple
-     * @param f_passband - the passband edge frequency
-     * @param f_stopband - the stopband edge frequency
-     * @param fsamp - sample frequency
-     * @param gain - gain miltiplier
+    /*!
+     * \brief setFilterParam Filling data fields of the
+     * \param g_passband - the passband gain ripple
+     * \param g_stopband - the stopband gain ripple
+     * \param f_passband - the passband edge frequency
+     * \param f_stopband - the stopband edge frequency
+     * \param fsamp - sample frequency
+     * \param gain - gain miltiplier
      */
     void setFilterParam(FiltParam<T>& other)
     {
@@ -41,12 +41,12 @@ class DigIIRFilter
         m_fparam.gain = other.gain;
     }
 
-    /**
-     * @brief FillZeroCoeffs - Filling normalized vectors with default values
-     * @param avec input reference to vector of "a" coefficients for filling
-     * @param bvec input reference to vector of "b" coefficients for filling
-     * @param num the order
-     * @return bool variable, success if order value not out of range
+    /*!
+     * \brief FillZeroCoeffs - Filling normalized vectors with default values
+     * \param avec input reference to vector of "a" coefficients for filling
+     * \param bvec input reference to vector of "b" coefficients for filling
+     * \param num the order
+     * \return bool variable, success if order value not out of range
      */
     bool FillZeroCoeffs(std::vector<T>& avec, std::vector<T>& bvec, std::size_t num)
     {
@@ -68,6 +68,12 @@ class DigIIRFilter
     }
 
 public:
+    /*!
+     * \brief DigIIRFilter<T>
+     * \param fparam
+     * \param ftype
+     * \param atype
+     */
     explicit DigIIRFilter<T>(FiltParam<T>& fparam, FilterType& ftype, ApproxType& atype)
     {
         if(ftype == FilterType::UNDEF || ftype >= FilterType::ERR)
@@ -85,13 +91,16 @@ public:
         m_calccoeffs = new CalcCoeffs<T>(fparam, ftype, atype);
     }
 
+    /*!
+     * \brief dtor
+     */
     ~DigIIRFilter<T>()
     {
         delete m_calccoeffs;
     }
 
-    /**
-     * @brief WarpFreq
+    /*!
+     * \brief WarpFreq
      */
     void WarpFreq()
     {
@@ -115,8 +124,8 @@ public:
         }
     }
 
-    /**
-     * @brief setOrder
+    /*!
+     * \brief setOrder - add filter order
      */
     void setOrder()
     {
@@ -124,8 +133,10 @@ public:
         m_order = m_calccoeffs->getFilterOrder();
     }
 
-    /**
-     * @brief NormalizeCoefficients - Calculation and filling the vectors of coefficients depending on the approximation method
+    /*!
+     * \brief NormalizeCoefficients - Calculation and filling of coefficient
+     *                                vectors depending on the approximation method.
+     *                                The coefficients are presented in a normalized form.
      */
     void NormalizeCoefficients()
     {
@@ -153,13 +164,14 @@ public:
         }
     }
 
-    /**
-     * @brief DenormalizeCoefficients
+    /*!
+     * \brief DenormalizeCoefficients - Denormalization consists in the transition
+     *                                  from normalized parameters to true ones.
      */
     void DenormalizeCoefficients()
     {
-        T freq, // Stored value for unnormaliztion frequency
-          BW,   /* For transformation to bandstop or bandpass type */
+        T freq, /*!< Stored value for unnormaliztion frequency */
+          BW,   /*!< For transformation to bandstop or bandpass type */
           Wo;
 
         if(m_atype == ApproxType::BUTTER
@@ -200,15 +212,17 @@ public:
         }
     }
 
-    /**
-     * @brief BilTransform
+    /*!
+     * \brief BilTransform - Bilinear transformation of the transfer characteristic
+     *                       (arrays of coefficients a, b) of the analog filter
+     *                       into the transfer characteristic of the digital filter.
      */
     void BilTransform()
     {
         auto c = 2 * m_fparam.fsamp;
         auto c_sq = c * c;
 
-        auto half_order = (m_order + 1) / 2;
+        auto half_order = static_cast<std::size_t>((m_order + 1) / 2);
         auto start = 0;
         T az0, az1, az2,
           bz0, bz1, bz2;
@@ -229,7 +243,7 @@ public:
             start = 1;
         }
 
-        for(auto i = start; i < half_order; ++i)
+        for(std::size_t i = start; i < half_order; ++i)
         {
             auto j = 3 * i;
             az0 = n_acoefs[j] * c_sq + n_acoefs[j + 1] * c + n_acoefs[j + 2];
@@ -248,8 +262,8 @@ public:
         }
     }
 
-    /**
-     * @brief unWarpFreq
+    /*!
+     * \brief unWarpFreq
      */
     void unWarpFreq()
     {
