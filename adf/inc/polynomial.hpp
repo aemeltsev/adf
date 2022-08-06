@@ -13,15 +13,15 @@
 #include "base.hpp"
 #include "complex.hpp"
 
-#define MR 8             //number of different fractional values to break (rare) limit cycles
-#define MT 10            //number of steps to break (rare) limit cycles
-#define MAX_IT (MT * MR) //maximal number of iterations
+#define MR 8             /*!< number of different fractional values to break (rare) limit cycles */
+#define MT 10            /*!< number of steps to break (rare) limit cycles */
+#define MAX_IT (MT * MR) /*!< maximal number of iterations */
 
 namespace adf
 {
 
-/**
- * @class Polynomial - parameterized class for polynomial working
+/*!
+ * \class Polynomial - parameterized class for polynomial working
  *        not sparse, inner format:
  *        \f$ a_{0} + a_{1}*x^{1} + \ldots + a_{n}*x^{n-1} \f$
  */

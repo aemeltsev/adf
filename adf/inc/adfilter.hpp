@@ -4,8 +4,9 @@
 
 #ifndef FDESIGN_H
 #define FDESIGN_H
-//#include "genfilter.hpp"
 #include "anfilter.hpp"
 #include "iirfilter.hpp"
 #include "fresp.hpp"
+#include "polynomial.hpp"
+#include "fft.hpp"
 #endif // FDESIGN_H

@@ -12,24 +12,24 @@ namespace adf {
 template<typename T>
 class complex
 {
-    /**
-     * @brief Working variable for store re, im
+    /*!
+     * \brief Working variable for store re, im
      */
     T m_re, m_im;
 
 public:
-    //ctors
+    //! ctors
     complex() noexcept {m_re=m_im=0;}
     complex(T re, T im=0) noexcept
         :m_re(re)
         ,m_im(im)
     {}
-    //copy ctor
+    //! copy ctor
     complex(const complex<T>& other)
         :m_re(other.m_re)
         ,m_im(other.m_im)
     {}
-    //copy assign
+    //! copy assign
     complex<T> &operator=(const complex<T>& other)
     {
         if(this != &other){
@@ -38,12 +38,12 @@ public:
         }
         return (*this);
     }
-    //move ctor
+    //! move ctor
     complex(const complex&& other) noexcept
         :m_re(std::move(other.m_re))
         ,m_im(std::move(other.m_im))
     {}
-    //move assign
+    //! move assign
     complex<T> &operator=(complex<T>&& other)
     {
         if(this != &other){
@@ -53,25 +53,25 @@ public:
         return (*this);
     }
 
-    /**
-     * @brief getters
+    /*!
+     * \brief getters
      */
     T getReal() const {return m_re;}
     T getImag() const {return m_im;}
     void setReal(T val) {m_re = val;}
     void setImag(T val) {m_im = val;}
 
-    //math methods
-    //conj() - returns complex conj of complex number
+    //! math methods
+    //! conj() - returns complex conj of complex number
     complex<T> conj(){return complex<T>(m_re,-m_im);}
     T norm() const {return (m_re*m_re+m_im*m_im);}
-    //arg() - returns angle (radians) of complex number
+    //! arg() - returns angle (radians) of complex number
     T arg() const {return (!m_re&&!m_im) ? 0 : std::atan2(m_im, m_re);}
-    //mag() - returns the magnitude of complex number
+    //! mag() - returns the magnitude of complex number
     T mag() const {return std::sqrt(m_re*m_re + m_im*m_im);}
 
-    /**
-     * @brief overloadings
+    /*!
+     * \brief overloadings
      */
     template<typename U> friend complex<U> operator+(complex<U> &p_fr, complex<U> &p_sc);
     template<typename U> friend complex<U> operator+(U &p_fr, complex<U> &p_sc);
@@ -104,8 +104,8 @@ public:
     complex<T> &operator*=(T p_val);
     complex<T> &operator/=(complex<T> &p_val);
     complex<T> &operator/=(T p_val);
-    /**
-     * @brief out stream
+    /*!
+     * \brief out stream
      */
     template<typename U>
     friend std::ostream &operator<<(std::ostream &p_out, const complex<U> &p_val);
@@ -274,5 +274,5 @@ complex<T> &complex<T>::operator/=(T p_val)
     return *this;
 }
 
-} //namespace adf
+} // namespace adf
 #endif // COMPLEX_H

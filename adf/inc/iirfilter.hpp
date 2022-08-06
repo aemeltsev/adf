@@ -69,7 +69,7 @@ class DigIIRFilter
 
 public:
     /*!
-     * \brief DigIIRFilter<T>
+     * \brief DigIIRFilter<T> - ctor
      * \param fparam
      * \param ftype
      * \param atype

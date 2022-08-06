@@ -10,7 +10,7 @@
 
 namespace adf {
 /*!
- * \class AnalogFilter
+ * \class AnalogFilter - analog active filter solver class
  */
 template<typename T=double>
 class AnalogFilter
@@ -70,6 +70,12 @@ class AnalogFilter
     }
 
 public:
+    /*!
+     * \brief AnalogFilter<T> - ctor
+     * \param fparam - input specification for filter parameters
+     * \param ftype - type filter select
+     * \param atype - select the approximation methods
+     */
     explicit AnalogFilter<T>(FiltParam<T>& fparam, FilterType& ftype, ApproxType& atype)
         :m_ftype(ftype)
         ,m_atype(atype)
@@ -78,11 +84,17 @@ public:
         m_calccoeffs = new CalcCoeffs<T>(fparam, ftype, atype);
     }
 
+    /*!
+      * \brief dtor
+      */
     ~AnalogFilter<T>()
     {
         delete m_calccoeffs;
     }
 
+    /*!
+     * \brief setOrder - add filter order
+     */
     void setOrder()
     {
         m_calccoeffs->FilterOrder();
@@ -119,12 +131,13 @@ public:
     }
 
     /*!
-     * \brief
+     * \brief  - Denormalization consists in the transition
+     *           from normalized parameters to true ones.
      */
     void DenormalizeCoefficients()
     {
-        T freq, // Stored value for unnormaliztion frequency
-          BW,   /* For transformation to bandstop or bandpass type */
+        T freq, /*!< Stored value for unnormaliztion frequency */
+          BW,   /*!< For transformation to bandstop or bandpass type */
           Wo;
 
         if(m_atype == ApproxType::BUTTER
@@ -165,26 +178,46 @@ public:
         }
     }
 
+    /*!
+     * \brief getFilterOrder
+     * \return filter order value
+     */
     std::size_t getFilterOrder() const
     {
         return m_order;
     }
 
+    /*!
+     * \brief getApproximationType
+     * \return return approximation type value(integer)
+     */
     ApproxType getApproximationType()
     {
         return m_atype;
     }
 
+    /*!
+     * \brief getFilterType
+     * \return return filter type value(integer)
+     */
     FilterType getFilterType()
     {
         return m_ftype;
     }
 
+    /*!
+     * \brief getNormalizeCoefficients
+     * \return pair of vectors with a, b normalized coefficients
+     */
     std::pair<std::vector<T>, std::vector<T>> getNormalizeCoefficients()
     {
         return std::make_pair(n_acoefs, n_bcoefs);
     }
 
+    /*!
+     * \brief getDenormalizeCoefficients
+     * \return pair of vectors with a, b unnormalized coefficients
+     */
     std::pair<std::vector<T>, std::vector<T>> getDenormalizeCoefficients()
     {
         return std::make_pair(un_acoefs, un_bcoefs);
