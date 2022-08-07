@@ -57,9 +57,19 @@ class Response
     std::vector<T> m_edge_angl;  /*!< edge frequency phases */
     std::size_t m_num_edge_freq;
 
+    /*!
+     * \brief ResponseInit
+     */
     void ResponseInit();
 
 public:
+    /*!
+     * \brief Response
+     * \param resolution
+     * \param start_freq
+     * \param stop_freq
+     * \param gain_min
+     */
     Response(const FResolution& resolution,
              T start_freq=ADF_FREQ_MIN,
              T stop_freq=ADF_FREQ_MAX,
@@ -85,8 +95,18 @@ public:
         ResponseInit();
     }
 
+    /*!
+     * \brief VectorFill
+     */
     void VectorFill();
 
+    /*!
+     * \brief respAnalog
+     * \param a_coeff
+     * \param b_coeff
+     * \param order
+     * \param gain
+     */
     void respAnalog(std::vector<T> &a_coeff,
                     std::vector<T> &b_coeff,
                     const std::size_t order,
@@ -94,17 +114,29 @@ public:
     //void respDigitalIIR();
     //void respDigitalFIR();
 
+    /*!
+     * \brief getFrequency
+     * \return
+     */
     std::vector<T> getFrequency(){return m_freq;}
+
+    /*!
+     * \brief getMagnitude
+     * \return
+     */
     std::vector<T> getMagnitude(){return m_magn;}
+
+    /*!
+     * \brief getPhase
+     * \return
+     */
     std::vector<T> getPhase(){return m_angl;}
+
     //std::vector<T> getEdgeMagnitude();
     //std::vector<T> getEdgePhase();
     //std::size_t getNumEdgeFrequency();
 };
 
-/*!
- * \brief ResponseInit -
- */
 template<typename T>
 void Response<T>::ResponseInit()
 {
@@ -140,9 +172,6 @@ void Response<T>::ResponseInit()
     }
 }
 
-/*!
- * \brief VectorFill -
- */
 template<typename T>
 void Response<T>::VectorFill()
 {
@@ -180,13 +209,6 @@ void Response<T>::VectorFill()
     }
 }
 
-/*!
- * \brief respAnalog -
- * \param a_coeff -
- * \param b_coeff -
- * \param order -
- * \param gain -
- */
 template<typename T>
 void Response<T>::respAnalog(std::vector<T>& a_coeff, std::vector<T>& b_coeff, const std::size_t order, const T gain)
 {

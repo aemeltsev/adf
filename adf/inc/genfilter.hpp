@@ -67,7 +67,7 @@ struct FiltParam
 };
 
 /*!
- * \class
+ * \class Calculate coefficients for any type and approximation methods
  */
 template<typename T=double>
 class CalcCoeffs
@@ -161,10 +161,10 @@ T CalcCoeffs<T>::FreqNorm()
     T ratio;
 
     /*!< Edge frequency variables */
-    auto&& wp1 = m_fparam.freq_passband.first; /*!<pb freq lower */
-    auto&& wp2 = m_fparam.freq_passband.second; /*!<pb freq upper */
-    auto&& ws1 = m_fparam.freq_stopband.first; /*!<sb freq lower */
-    auto&& ws2 = m_fparam.freq_stopband.second; /*!<sb freq upper */
+    auto&& wp1 = m_fparam.freq_passband.first; /*!< pb freq lower */
+    auto&& wp2 = m_fparam.freq_passband.second; /*!< pb freq upper */
+    auto&& ws1 = m_fparam.freq_stopband.first; /*!< sb freq lower */
+    auto&& ws2 = m_fparam.freq_stopband.second; /*!< sb freq upper */
 
     switch(m_sfilter)
     {
@@ -335,10 +335,10 @@ void CalcCoeffs<T>::ButterApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bco
 template<typename T>
 void CalcCoeffs<T>::ChebyApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bcoefs)
 {
-    //!Determine ripple factor
+    //! Determine ripple factor
     auto epsilon = std::sqrt(std::pow(10.0, -0.1*m_fparam.gain_passband.first) - 1.0);
 
-    //!Determine minor axis radius of the ellipse
+    //! Determine minor axis radius of the ellipse
     auto d = asinh(1.0/epsilon) / m_order;
 
     //! Counters
@@ -384,7 +384,10 @@ void CalcCoeffs<T>::ChebyApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bcoe
  *        2. Check type filter for calculate the normalized cutoff frequency ratio
  *        3. Calculate kernel ratio, and temp variables
  *           \f$ v_0 = -\frac{j}{NK_1}sn^{-1} \bigg( \frac{j}{\varepsilon_p}, k_1 \bigg) \f$
- *        4. TODO
+ *        4. Using agm calculate the comlete elliptic integral of the first kind \f$ K(x) \f$
+ *        5. In elliptic filter design, it is also necessary to calculate the elliptic parameters
+ *           \f$ q(x) \f$  - jacobi nome, and calculate jacobi elliptic functions
+ *        6. And after calculate arrays of the coefficients
  */
 template<typename T>
 void CalcCoeffs<T>::ElliptApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bcoefs)
@@ -543,7 +546,13 @@ void CalcCoeffs<T>::IChebyApprox(std::vector<T>& n_acoefs, std::vector<T>& n_bco
 }
 
 /*!
- * \brief
+ * \brief Unnormalize arrays of the coefficients to band-stop type
+ * \param n_acoefs input array
+ * \param n_bcoefs input array
+ * \param un_acoefs denormalize output
+ * \param un_bcoefs denormalize output
+ * \param un_bandwith bandwitch frequency
+ * \param un_centrfreq central frequency
  */
 template<typename T>
 void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
@@ -569,7 +578,7 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
     /*!<  */
     size_coef = 3*origin_order;
 
-    //filling input vectors to default values
+    //! filling input vectors to default values
     un_acoefs.reserve(size_coef);
     un_bcoefs.reserve(size_coef);
     for(std::size_t ind=0; ind<size_coef; ++ind)
@@ -686,7 +695,13 @@ void CalcCoeffs<T>::BSCoefsUnnorm(std::vector<T> &n_acoefs,
 }
 
 /*!
- * \brief
+ * \brief Unnormalize arrays of the coefficients to band-pass type
+ * \param n_acoefs input array
+ * \param n_bcoefs input array
+ * \param un_acoefs denormalize output
+ * \param un_bcoefs denormalize output
+ * \param un_bandwith bandwitch frequency
+ * \param un_centrfreq central frequency
  */
 template<typename T>
 void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
@@ -838,6 +853,11 @@ void CalcCoeffs<T>::BPCoefsUnnorm(std::vector<T> &n_acoefs,
  *             S(h) = \frac{\omega_0}{s} \bigg( \frac{\omega_{PB}}{s_n} \bigg)
  *           ]\f
  *        The gain constant multiplied by \f$(A_2/B_2)\f$
+ * \param n_acoefs input array
+ * \param n_bcoefs input array
+ * \param un_acoefs denormalize output
+ * \param un_bcoefs denormalize output
+ * \param freq unnormalize frequency
  */
 template<typename T>
 void CalcCoeffs<T>::HPCoefsUnnorm(std::vector<T> &n_acoefs,
@@ -890,6 +910,11 @@ void CalcCoeffs<T>::HPCoefsUnnorm(std::vector<T> &n_acoefs,
  *           ]\f
  *        The gain constant is unchanged.
  *        See ECE 6414: Continuous Time Filters(P. Allen)
+ * \param n_acoefs input array
+ * \param n_bcoefs input array
+ * \param un_acoefs denormalize output
+ * \param un_bcoefs denormalize output
+ * \param freq unnormalize frequency
  */
 template<typename T>
 void CalcCoeffs<T>::LPCoefsUnnorm(std::vector<T> &n_acoefs,
