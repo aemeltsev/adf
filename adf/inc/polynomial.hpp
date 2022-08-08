@@ -40,6 +40,10 @@ class polynomial
     vec m_data;
     bool m_reversed = false;
 
+    /*!
+     * \brief _normalize
+     * \param other
+     */
     void _normalize(vec_ref other)
     {
         for(auto iter = other.rbegin(); iter != other.rend(); ++iter) {
@@ -51,11 +55,20 @@ class polynomial
          }
     }
 
+    /*!
+     * \brief _reverse
+     * \param other
+     */
     void _reverse(vec_ref other)
     {
         std::reverse(other.begin(), other.end());
     }
 
+    /*!
+     * \brief _padding
+     * \param lhs
+     * \param rhs
+     */
     void _padding(polynomial<T>& lhs, polynomial<T>& rhs)
     {
         auto add_zero = [&](std::size_t len, std::vector<T> v) -> void
@@ -92,6 +105,11 @@ class polynomial
         }
     }
 
+    /*!
+     * \brief _shift_pow10
+     * \param n
+     * \param v
+     */
     void _shift_pow10(std::size_t n, vec_ref v)
     {
         std::size_t i = 0;
@@ -161,6 +179,10 @@ class polynomial
         return {_q, _r};
     }
 
+    /*!
+     * \brief polynomial
+     * \param v
+     */
     polynomial(vec v)
         :m_data(std::move(v))
     {
@@ -270,19 +292,42 @@ public:
         return *this = polynomial<T>(data);
     }
     
+    /*!
+     * \brief normalize
+     */
     void normalize() { _normalize(m_data); }
 
+    /*!
+     * \brief size
+     * \return
+     */
     std::size_t size() {return m_data.size();}
 
+    /*!
+     * \brief size
+     * \return
+     */
     std::size_t size() const {return m_data.size();}
 
+    /*!
+     * \brief empty
+     * \return
+     */
     bool empty() { return size() == 0;}
 
+    /*!
+     * \brief order
+     * \return
+     */
     std::size_t order()
     {
         return m_data.size() - 1;
     }
 
+    /*!
+     * \brief reverse
+     * \return
+     */
     polynomial<T> reverse()
     {
         polynomial<T> tmp(*this);
@@ -291,6 +336,10 @@ public:
         return tmp;
     }
 
+    /*!
+     * \brief unreverse
+     * \return
+     */
     polynomial<T> unreverse()
     {
         polynomial<T> tmp(*this);
@@ -299,16 +348,41 @@ public:
         return tmp;
     }
 
+    /*!
+     * \brief data
+     * \return
+     */
     vec data() const
     {
         polynomial<T> tmp = unreverse();
         return tmp.m_data;
     }
 
+    /*!
+     * \brief padding
+     * \param other
+     */
     void padding(polynomial<T>& other) { _padding(*this, other); }
 
+    /*!
+     * \brief shift_pow10
+     * \param n
+     */
     void shift_pow10(std::size_t n) { _shift_pow10(n, this->m_data); }
+
+    /*!
+     * \brief roots
+     * \param re
+     * \param im
+     * \return
+     */
     int roots(vec_ref re, vec_ref im) const;
+
+    /*!
+     * \brief roots
+     * \param roots
+     * \return
+     */
     int roots(vec_comp_ref roots) const;
 
     /**
@@ -354,43 +428,124 @@ public:
     friend std::ostream &operator<<(std::ostream &p_out, const polynomial<U> &p_val);
 
 private:
+    /*!
+     *
+     */
     template<typename U>
     friend polynomial<U> karatsuba(polynomial<U>& rhs,
                                    polynomial<U>& lhs);
 
     //TODO
+    /*!
+     *
+     */
     template<typename U>
     friend polynomial<U> newton(polynomial<U>& rhs,
                                 polynomial<U>& lhs);
 
+    /*!
+     * \brief quadratic
+     * \param a
+     * \param b
+     * \param c
+     * \param re1
+     * \param im1
+     * \param re2
+     * \param im2
+     * \return
+     */
     int quadratic(const T& a, const T& b, const T& c,
                   T& re1, T& im1,
                   T& re2, T& im2) const;
 
+    /*!
+     * \brief quadratic
+     * \param a
+     * \param b
+     * \param c
+     * \param x1
+     * \param x2
+     * \return
+     */
     int quadratic(const T& a, const T& b, const T& c,
                   complex<T>& x1, complex<T>& x2) const;
 
+    /*!
+     * \brief quadratic
+     * \param b
+     * \param c
+     * \param re1
+     * \param im1
+     * \param re2
+     * \param im2
+     * \return
+     */
     int quadratic(const T& b, const T& c,
                   T& re1, T& im1,
                   T& re2, T& im2) const;
 
+    /*!
+     * \brief quadratic
+     * \param b
+     * \param c
+     * \param x1
+     * \param x2
+     * \return
+     */
     int quadratic(const T& b, const T& c,
                   complex<T>& x1, complex<T>& x2) const;
 
+    /*!
+     * \brief cubic
+     * \param a
+     * \param b
+     * \param c
+     * \param re1
+     * \param im1
+     * \param re2
+     * \param im2
+     * \param re3
+     * \param im3
+     * \return
+     */
     int cubic(const T& a, const T& b, const T& c,
               T& re1, T& im1,
               T& re2, T& im2,
               T& re3, T& im3) const;
 
+    /*!
+     * \brief cubic
+     * \param a
+     * \param b
+     * \param c
+     * \param x1
+     * \param x2
+     * \param x3
+     * \return
+     */
     int cubic(const T& a, const T& b, const T& c,
               complex<T>& x1,
               complex<T>& x2,
               complex<T>& x3) const;
 
+    /*!
+     * \brief laguerre
+     * \param poly
+     * \param degree
+     * \param root
+     * \return
+     */
     int laguerre(vec_comp_ref poly,
                  const std::size_t degree,
                          complex<T>& root) const;
 
+    /*!
+     * \brief find_roots
+     * \param poly
+     * \param roots
+     * \param polish
+     * \return
+     */
     int find_roots(vec_ref poly,
                    vec_comp_ref roots,
                    const bool polish = true) const;

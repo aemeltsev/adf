@@ -13,7 +13,7 @@
 namespace adf {
 
 /*!
- * \brief The Scale enum -
+ * \brief The Scale enum - for data presentation
  */
 enum class Scale
 {
@@ -44,8 +44,8 @@ class Response
     std::size_t m_decades=0;
     std::size_t m_dec_pts=0;
     std::size_t m_tot_pts=0;
-    Scale m_frq;
-    Scale m_mag;
+    Scale m_frq_scale;
+    Scale m_mag_scale;
     
     //! Field for estimation during initialization and fields used for subsequent calculations
     std::size_t m_resolution=0;
@@ -58,17 +58,18 @@ class Response
     std::size_t m_num_edge_freq;
 
     /*!
-     * \brief ResponseInit
+     * \brief ResponseInit - helper initialize method
      */
     void ResponseInit();
 
 public:
     /*!
-     * \brief Response
+     * \brief Response - Class for determine of the frequency response
+     *                   of the transfer function
      * \param resolution
-     * \param start_freq
-     * \param stop_freq
-     * \param gain_min
+     * \param start_freq - begin frequency
+     * \param stop_freq - end frequency
+     * \param gain_min - min gain for scale selected
      */
     Response(const FResolution& resolution,
              T start_freq=ADF_FREQ_MIN,
@@ -96,44 +97,52 @@ public:
     }
 
     /*!
-     * \brief VectorFill
+     * \brief VectorFill filling vector the initialize values
      */
     void VectorFill();
 
     /*!
-     * \brief respAnalog
-     * \param a_coeff
-     * \param b_coeff
-     * \param order
-     * \param gain
+     * \brief respAnalog - estimate the frequency response of the transfer function
+     *                     of a linear system in the s-domain
+     * \param a_coeff - vector of the input coefficients
+     * \param b_coeff - vector of the input coefficients
+     * \param order - filter order
+     * \param gain - gain initial value
      */
     void respAnalog(std::vector<T> &a_coeff,
                     std::vector<T> &b_coeff,
                     const std::size_t order,
                     const T gain);
-    //void respDigitalIIR();
-    //void respDigitalFIR();
 
     /*!
-     * \brief getFrequency
-     * \return
+     * \brief respDigitalIIR - calculate response for IIR filter
+     * \param a_coeff - vector of the input coefficients
+     * \param b_coeff - vector of the input coefficients
+     * \param order - filter order
+     * \param gain - gain initial value
      */
+    void respDigitalIIR(std::vector<T> &a_coeff,
+                        std::vector<T> &b_coeff,
+                        const std::size_t order,
+                        const T gain,
+                        const T fsample);
+
+    /*!
+     * \brief respDigitalFIR - calculate response for FIR filter
+     * \param a_coeff - vector of the input coefficients
+     * \param order - filter order
+     * \param gain - gain initial value
+     */
+    void respDigitalFIR(std::vector<T> &a_coeff,
+                        const std::size_t order,
+                        const T gain,
+                        const T fsample);
+
     std::vector<T> getFrequency(){return m_freq;}
-
-    /*!
-     * \brief getMagnitude
-     * \return
-     */
     std::vector<T> getMagnitude(){return m_magn;}
-
-    /*!
-     * \brief getPhase
-     * \return
-     */
     std::vector<T> getPhase(){return m_angl;}
-
-    //std::vector<T> getEdgeMagnitude();
-    //std::vector<T> getEdgePhase();
+    std::vector<T> getEdgeMagnitude(){return m_edge_magn;}
+    std::vector<T> getEdgePhase(){ return m_edge_angl;}
     //std::size_t getNumEdgeFrequency();
 };
 
@@ -146,15 +155,15 @@ void Response<T>::ResponseInit()
     m_gain_min = 10.0 * std::floor(m_gain_min/10.01);
     //! Determine if magnitude should be linear or logarithmic
     if(m_gain_min >= -0.001)
-        m_mag = Scale::LIN;
+        m_mag_scale = Scale::LIN;
     else
-        m_mag = Scale::LOG;
+        m_mag_scale = Scale::LOG;
     //! Determine lin or log frequency scale
     m_ratio = static_cast<std::size_t>(m_stop_freq/m_start_freq);
 
     if(m_ratio >= 10)
     {
-        m_frq = Scale::LOG;
+        m_frq_scale = Scale::LOG;
 
         while(m_ratio > 2)
         {
@@ -167,7 +176,7 @@ void Response<T>::ResponseInit()
         m_stop_freq = m_start_freq * std::pow(10, m_decades);
     }
     else{
-        m_frq = Scale::LIN;
+        m_frq_scale = Scale::LIN;
         m_dec_pts = 0;
     }
 }
@@ -187,7 +196,7 @@ void Response<T>::VectorFill()
         m_angl.push_back(0.);
     }
 
-    if(m_frq == Scale::LIN)
+    if(m_frq_scale == Scale::LIN)
     {
         delta = (m_stop_freq - m_start_freq) / (m_tot_pts - 1);
 
@@ -249,7 +258,108 @@ void Response<T>::respAnalog(std::vector<T>& a_coeff, std::vector<T>& b_coeff, c
         m_angl[find] *= ADF_RAD2DEG;
     }
 
-    if(m_mag == Scale::LOG)
+    if(m_mag_scale == Scale::LOG)
+    {
+        for(auto find=0; find<m_tot_pts; ++find)
+        {
+            if(m_magn[find] < ADF_ZERO)
+            {
+                m_magn[find] = ADF_ZERO;
+            }
+            m_magn[find] = 20 * std::log10(m_magn[find]);
+        }
+    }
+}
+
+template<typename T>
+void Response<T>::respDigitalIIR(std::vector<T>& a_coeff, std::vector<T>& b_coeff, const std::size_t order, const T gain, const T fsample)
+{
+    VectorFill();
+
+    for(auto find=0; find<m_tot_pts; ++find)
+    {
+        m_magn[find] = gain;
+
+        auto omega = ADF_PI_2 * m_freq[find] / fsample;
+        auto omega2 = 2 * omega;
+
+        for(std::size_t qind=0; qind<(order+1)/2; ++qind)
+        {
+            auto cindx = qind * 3;
+            //! Numerator
+            auto real = a_coeff[cindx] + a_coeff[cindx + 1] * std::cos(omega)
+                        + a_coeff[cindx + 2] * std::cos(omega2);
+            auto imag = a_coeff[cindx + 1] * std::sin(omega)
+                        - a_coeff[cindx + 2] * std::sin(omega2);
+            auto mag = std::sqrt(real*real + imag*imag);
+            m_magn[find] *= mag;
+
+            if(mag > 0)
+            {
+                m_angl[find] += std::atan2(imag, real);
+            }
+            //! Denominator
+            real = b_coeff[cindx] + b_coeff[cindx + 1] * std::cos(omega)
+                   + b_coeff[cindx + 2] * std::cos(omega2);
+            imag = b_coeff[cindx + 1] * std::sin(omega)
+                   - b_coeff[cindx + 2] * std::sin(omega2);
+            mag = std::sqrt(real*real + imag*imag);
+            m_magn[find] /= mag;
+
+            if(mag > 0)
+            {
+                m_angl[find] -= std::atan2(imag, real);
+            }
+        }
+
+        m_angl[find] *= ADF_RAD2DEG;
+    }
+
+    if(m_mag_scale == Scale::LOG)
+    {
+        for(auto find=0; find<m_tot_pts; ++find)
+        {
+            if(m_magn[find] < ADF_ZERO)
+            {
+                m_magn[find] = ADF_ZERO;
+            }
+            m_magn[find] = 20 * std::log10(m_magn[find]);
+        }
+    }
+}
+
+template<typename T>
+void Response<T>::respDigitalFIR(std::vector<T> &a_coeff, const std::size_t order, const T gain, const T fsample)
+{
+    VectorFill();
+
+    for(auto find=0; find<m_tot_pts; ++find)
+    {
+        m_magn[find] = gain;
+
+        auto omega = ADF_PI_2 * m_freq[find] / fsample;
+        auto real = 0.0;
+        auto imag = 0.0;
+
+        for(std::size_t ind=0; ind<order; ++ind)
+        {
+            auto omega_i = ind * omega;
+            real += a_coeff[ind] * std::cos(omega_i);
+            imag += a_coeff[ind] * std::sin(omega_i);
+        }
+
+        auto mag = std::sqrt(real*real + imag*imag);
+        m_magn[find] *= mag;
+
+        if(mag > 0)
+        {
+            m_angl[find] -= std::atan2(imag, real);
+        }
+
+        m_angl[find] *= ADF_RAD2DEG;
+    }
+
+    if(m_mag_scale == Scale::LOG)
     {
         for(auto find=0; find<m_tot_pts; ++find)
         {
@@ -263,5 +373,4 @@ void Response<T>::respAnalog(std::vector<T>& a_coeff, std::vector<T>& b_coeff, c
 }
 
 }
-
 #endif //FRESPONSE_H
