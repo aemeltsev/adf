@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base.hpp"
+#include "genfilter.hpp"
 
 namespace adf {
 
@@ -22,7 +23,7 @@ enum class Scale
 };
 
 /*!
- * \brief The FResolution enum -
+ * \brief The FResolution enum - determine resolution of response(num pts)
  */
 enum class FResolution
 {
@@ -37,6 +38,7 @@ enum class FResolution
 template<typename T=double>
 class Response
 {
+protected:
     //!Common fiels initialize
     T m_start_freq = 0.;    /*!< start frequency for response */
     T m_stop_freq = 0.;     /*!< end frequency for response */
@@ -53,9 +55,6 @@ class Response
     std::vector<T> m_freq;       /*!< frequency values */
     std::vector<T> m_magn;       /*!< output magnitude values */
     std::vector<T> m_angl;       /*!< output phase values */
-    std::vector<T> m_edge_magn;  /*!< edge frequency magnitudes */
-    std::vector<T> m_edge_angl;  /*!< edge frequency phases */
-    std::size_t m_num_edge_freq;
 
     /*!
      * \brief ResponseInit - helper initialize method
@@ -141,9 +140,7 @@ public:
     std::vector<T> getFrequency(){return m_freq;}
     std::vector<T> getMagnitude(){return m_magn;}
     std::vector<T> getPhase(){return m_angl;}
-    std::vector<T> getEdgeMagnitude(){return m_edge_magn;}
-    std::vector<T> getEdgePhase(){ return m_edge_angl;}
-    //std::size_t getNumEdgeFrequency();
+    std::size_t getTotPts(){return m_tot_pts;}
 };
 
 template<typename T>
@@ -221,13 +218,13 @@ void Response<T>::VectorFill()
 template<typename T>
 void Response<T>::respAnalog(std::vector<T>& a_coeff, std::vector<T>& b_coeff, const std::size_t order, const T gain)
 {
-    VectorFill();
+    //VectorFill();
 
     for(auto find=0; find<m_tot_pts; ++find)
     {
         m_magn[find] = gain;
 
-        auto omega = ADF_PI_2 * m_magn[find];
+        auto omega = ADF_PI_2 * m_freq[find];
         auto pow2omega = omega * omega;
 
         for(std::size_t qind=0; qind<(order+1)/2; ++qind)
@@ -274,7 +271,7 @@ void Response<T>::respAnalog(std::vector<T>& a_coeff, std::vector<T>& b_coeff, c
 template<typename T>
 void Response<T>::respDigitalIIR(std::vector<T>& a_coeff, std::vector<T>& b_coeff, const std::size_t order, const T gain, const T fsample)
 {
-    VectorFill();
+    //VectorFill();
 
     for(auto find=0; find<m_tot_pts; ++find)
     {
@@ -331,7 +328,7 @@ void Response<T>::respDigitalIIR(std::vector<T>& a_coeff, std::vector<T>& b_coef
 template<typename T>
 void Response<T>::respDigitalFIR(std::vector<T> &a_coeff, const std::size_t order, const T gain, const T fsample)
 {
-    VectorFill();
+    //VectorFill();
 
     for(auto find=0; find<m_tot_pts; ++find)
     {
@@ -372,5 +369,88 @@ void Response<T>::respDigitalFIR(std::vector<T> &a_coeff, const std::size_t orde
     }
 }
 
+/*!
+ *
+ */
+template<typename T>
+class EdgeResponse: public Response<T>
+{
+    std::vector<T> m_edge_magn;  /*!< edge frequency magnitudes */
+    std::vector<T> m_edge_angl;  /*!< edge frequency phases */
+    std::size_t m_num_edge_freq;
+
+    void EdgeResponseInit();
+public:
+    enum class Implement {Analog, DigIIR, DigFIR};
+
+    EdgeResponse(const FilterType& f_type,
+                 const FiltParam<T>& f_param,
+                 const FResolution& resolution,
+                 T start_freq=ADF_FREQ_MIN,
+                 T stop_freq=ADF_FREQ_MAX,
+                 T gain_min=ADF_GAIN_STOP)
+        :Response<T>(resolution, start_freq, stop_freq, gain_min)
+    {
+        Response<T>::m_tot_pts = 0;
+
+        if(f_type == FilterType::LPF || f_type == FilterType::HPF)
+        {
+            Response<T>::m_tot_pts = 2;
+            Response<T>::m_freq.reserve(Response<T>::m_tot_pts);
+            Response<T>::m_magn.reserve(Response<T>::m_tot_pts);
+            Response<T>::m_angl.reserve(Response<T>::m_tot_pts);
+            Response<T>::m_freq[0] = f_param.freq_passband.first / ADF_PI_2;
+            Response<T>::m_freq[1] = f_param.freq_stopband.first / ADF_PI_2;
+        }
+        else if(f_type == FilterType::PBF || f_type == FilterType::SBF)
+        {
+            Response<T>::m_tot_pts = 4;
+            Response<T>::m_freq.reserve(Response<T>::m_tot_pts);
+            Response<T>::m_magn.reserve(Response<T>::m_tot_pts);
+            Response<T>::m_angl.reserve(Response<T>::m_tot_pts);
+            Response<T>::m_freq[0] = f_param.freq_passband.first / ADF_PI_2;
+            Response<T>::m_freq[1] = f_param.freq_passband.second / ADF_PI_2;
+            Response<T>::m_freq[2] = f_param.freq_stopband.first / ADF_PI_2;
+            Response<T>::m_freq[3] = f_param.freq_stopband.second / ADF_PI_2;
+        }
+    }
+
+    std::vector<T> getEdgeMagnitude(){return m_edge_magn;}
+    std::vector<T> getEdgePhase(){ return m_edge_angl;}
+    std::size_t getEdgeTotPts(){return m_num_edge_freq;}
+    void calcEdgeResponse(const Implement& impl,
+                          std::vector<T> &a_coeff,
+                          std::vector<T> &b_coeff,
+                          const std::size_t order,
+                          const T gain,
+                          const T fsample);
+
+};
+
+template<typename T>
+void EdgeResponse<T>::calcEdgeResponse(const Implement &impl,
+                                       std::vector<T> &a_coeff,
+                                       std::vector<T> &b_coeff,
+                                       const std::size_t order,
+                                       const T gain,
+                                       const T fsample)
+{
+    switch(impl)
+    {
+    case Implement::Analog :
+        Response<T>::respAnalog(a_coeff, b_coeff, order, gain);
+        break;
+    case Implement::DigFIR :
+        Response<T>::respDigitalFIR(a_coeff, order, gain, fsample);
+        break;
+    case Implement::DigIIR :
+        Response<T>::respDigitalIIR(a_coeff, b_coeff, order, gain, fsample);
+        break;
+    }
+
+    m_edge_magn = std::move(Response<T>::getMagnitude());
+    m_edge_angl = std::move(Response<T>::getPhase());
+    m_num_edge_freq = Response<T>::getTotPts();
 }
+} //namespace adf
 #endif //FRESPONSE_H
