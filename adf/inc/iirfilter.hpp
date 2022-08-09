@@ -10,6 +10,9 @@
 
 namespace adf {
 
+/*!
+ * Class for estimate digital filter with infinite impulse response
+ */
 template<typename T=double>
 class DigIIRFilter
 {
@@ -70,9 +73,9 @@ class DigIIRFilter
 public:
     /*!
      * \brief DigIIRFilter<T> - ctor
-     * \param fparam
-     * \param ftype
-     * \param atype
+     * \param fparam - input specification
+     * \param ftype - filter type
+     * \param atype - type of the approximation method
      */
     explicit DigIIRFilter<T>(FiltParam<T>& fparam, FilterType& ftype, ApproxType& atype)
     {
@@ -100,7 +103,10 @@ public:
     }
 
     /*!
-     * \brief WarpFreq
+     * \brief WarpFreq - warping \f$ \omega_a = \frac{2}{T}\tan(\omega_{d}T/2) \f$
+     *                   where \f$ \omega_a \f$ - analog frequencies and \f$ \omega_d \f$
+     *                   - digital frequencies
+     *                   more see Rorabaugh C.B.- Digital Filter Design
      */
     void WarpFreq()
     {
@@ -263,7 +269,10 @@ public:
     }
 
     /*!
-     * \brief unWarpFreq
+     * \brief unWarpFreq  - unwarping \f$ \omega_d = \frac{2}{T}\arctan(\omega_{a}T/2) \f$
+     *                   where \f$ \omega_a \f$ - analog frequencies and \f$ \omega_d \f$
+     *                   - digital frequencies
+     *                   more see Rorabaugh C.B.- Digital Filter Design
      */
     void unWarpFreq()
     {
