@@ -11,6 +11,7 @@ set(SOURCES
     inc/fresp.hpp
     inc/polynomial.hpp
     inc/fft.hpp
+    inc/firfilter.hpp
     src/complex.cpp
     src/polynomial.cpp
     )
