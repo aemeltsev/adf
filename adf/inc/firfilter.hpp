@@ -6,7 +6,11 @@
 #ifndef DIGFIRFILTER_H
 #define DIGFIRFILTER_H
 
+#include "advmath.hpp"
 #include "genfilter.hpp"
+
+constexpr int ADF_GRID_MULT(16);         /**< starting grid mult */
+constexpr int ADF_MAX_BANDS(10);         /**< max bands for PM */
 
 namespace adf {
 
@@ -22,6 +26,14 @@ enum class WindowType
     Undefined
 };
 
+enum class FIRType
+{
+    SymOdd = 1,
+    SymEven = 2,
+    AsymOdd = 3,
+    AsymEven = 4,
+};
+
 template<typename T>
 class DigFIRFilter
 {
@@ -32,10 +44,38 @@ private:
     ApproxType m_atype;
     std::size_t m_order = 0;
     std::vector<T> n_acoefs, n_bcoefs; /*!< to normalise coefs */
-    //std::vector<T> un_acoefs, un_bcoefs; /*!< to unnormalise coefs */
+
+    struct ParksMcClellanParam
+    {
+        int num_pts;
+        int num_ext;
+        int num_bands;
+        FIRType filt_type;
+        int grid_mult;
+        std::vector<int> band_pts;
+        std::vector<int> extrml;
+        T delta;
+        std::vector<T> alpha;
+        std::vector<T> beta;
+        std::vector<T> C;
+        std::vector<T> x;
+        std::vector<T> grid;
+        std::vector<T> grid_resp;
+        std::vector<T> grid_wate;
+        std::vector<T> P;
+        std::vector<T> E;
+
+    };
 
     T CalcFilterLen(const WindowType &w_type);
     void CalcIdealFIRCoeffs();
+    void RectangularWindowCoeffs();
+    void HammingWindowCoeffs();
+    void HanningWindowCoeffs();
+    void BlackmanWindowCoeffs();
+    void KaiserWindowCoeffs(T beta);
+    void BartlettWindowCoeffs();
+    void ParksMcClellanWindowCoeffs();
 public:
 
     DigFIRFilter(FilterType& f_type, FiltParam<T>& f_param, ApproxType& atype)
@@ -45,13 +85,7 @@ public:
 
     void CalcDigFIRCoeffs(const WindowType& w_type, std::size_t order = 0);
 
-    void RectangularWindowCoeffs();
-    void HammingWindowCoeffs();
-    void HanningWindowCoeffs();
-    void BlackmanWindowCoeffs();
-    void KaiserWindowCoeffs();
-    void BartlettWindowCoeffs();
-    void ParksMcClellanWindowCoeffs();
+
     void setParksMcClellanParameters();
     void RemezInterchange();
     void ComputeLagrange();
@@ -243,24 +277,31 @@ void DigFIRFilter<T>::CalcDigFIRCoeffs(const WindowType& w_type, std::size_t ord
     switch(w_type)
     {
     case WindowType::RectangularWindow :
+        RectangularWindowCoeffs();
         break;
 
     case WindowType::BartlettWindow :
+        BartlettWindowCoeffs();
         break;
 
     case WindowType::BlackmanWindow :
+        BlackmanWindowCoeffs();
         break;
 
     case WindowType::HammingWindow :
+        HammingWindowCoeffs();
         break;
 
     case WindowType::HanningWindow :
+        HanningWindowCoeffs();
         break;
 
     case WindowType::KaiserWindow :
+        KaiserWindowCoeffs(beta);
         break;
 
     case WindowType::ParksMcClellanWindow :
+        ParksMcClellanWindowCoeffs();
         break;
 
     case WindowType::Undefined :
@@ -276,6 +317,114 @@ void DigFIRFilter<T>::CalcDigFIRCoeffs(const WindowType& w_type, std::size_t ord
     {
         MultWinIdealCoeffs();
     }
+}
+
+/*!
+ * \brief
+ */
+template<typename T>
+void DigFIRFilter<T>::RectangularWindowCoeffs()
+{
+    auto N = m_order;
+    auto n = static_cast<T>(N);
+    for(auto indx=0; indx<(N+1)/2; ++indx)
+    {
+        auto i = static_cast<T>(indx);
+        n_acoefs[indx] = 1.0;
+        n_acoefs[N - 1 - indx] = n_acoefs[indx];
+    }
+}
+
+/*!
+ * \brief
+ */
+template<typename T>
+void DigFIRFilter<T>::BartlettWindowCoeffs()
+{
+    auto N = m_order;
+    auto n = static_cast<T>(N);
+    for(auto indx=0; indx<(N+1)/2; ++indx)
+    {
+        auto i = static_cast<T>(indx);
+        n_acoefs[indx] = (2.0 * i) / (n - 1);
+        n_acoefs[N - 1 - indx] = n_acoefs[indx];
+    }
+}
+
+/*!
+ * \brief
+ */
+template<typename T>
+void DigFIRFilter<T>::BlackmanWindowCoeffs()
+{
+    auto N = m_order;
+    auto n = static_cast<T>(N);
+    for(auto indx=0; indx<(N+1)/2; ++indx)
+    {
+        auto i = static_cast<T>(indx);
+        n_acoefs[indx] = 0.42 - 0.50 * std::cos(ADF_PI * i / (n - 1))
+                              + 0.50 * std::cos(2 * ADF_PI * i / (n - 1));
+        n_acoefs[N - 1 - indx] = n_acoefs[indx];
+    }
+}
+
+/*!
+ * \brief
+ */
+template<typename T>
+void DigFIRFilter<T>::HammingWindowCoeffs()
+{
+    auto N = m_order;
+    auto n = static_cast<T>(N);
+    for(auto indx=0; indx<(N+1)/2; ++indx)
+    {
+        auto i = static_cast<T>(indx);
+        n_acoefs[indx] = 0.54 - 0.46 * std::cos(ADF_PI * i / (n - 1));
+        n_acoefs[N - 1 - indx] = n_acoefs[indx];
+    }
+}
+
+/*!
+ * \brief
+ */
+template<typename T>
+void DigFIRFilter<T>::HanningWindowCoeffs()
+{
+    auto N = m_order;
+    auto n = static_cast<T>(N);
+    for(auto indx=0; indx<(N+1)/2; ++indx)
+    {
+        auto i = static_cast<T>(indx);
+        n_acoefs[indx] = 0.50 - 0.50 * std::cos(ADF_PI * i / (n - 1));
+        n_acoefs[N - 1 - indx] = n_acoefs[indx];
+    }
+}
+
+/*!
+ * \brief
+ * \param
+ */
+template<typename T>
+void DigFIRFilter<T>::KaiserWindowCoeffs(T beta)
+{
+    auto N = m_order;
+    auto n = static_cast<T>(N);
+    for(auto indx=0; indx<(N+1)/2; ++indx)
+    {
+        auto i = static_cast<T>(indx);
+        n_acoefs[indx] = bessel_func_mod(2 * beta * std::sqrt(i * (n - i -1)) / (n - 1)) /
+                         bessel_func_mod(beta);
+        n_acoefs[N - 1 - indx] = n_acoefs[indx];
+    }
+}
+
+/*!
+ * \brief
+ */
+template<typename T>
+void DigFIRFilter<T>::ParksMcClellanWindowCoeffs()
+{
+
 }
 
 } //namespace adf
