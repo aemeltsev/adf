@@ -11,6 +11,7 @@
 
 constexpr int ADF_GRID_MULT(16);         /**< starting grid mult */
 constexpr int ADF_MAX_BANDS(10);         /**< max bands for PM */
+constexpr double ADF_INF(1E+300);
 
 namespace adf {
 
@@ -43,7 +44,7 @@ private:
     FilterType m_ftype;
     ApproxType m_atype;
     std::size_t m_order = 0;
-    std::vector<T> n_acoefs, n_bcoefs; /*!< to normalise coefs */
+    std::vector<T> n_acoefs, n_bcoefs;
 
     struct ParksMcClellanParam
     {
@@ -51,7 +52,7 @@ private:
         int num_ext;
         int num_bands;
         FIRType filt_type;
-        int grid_mult;
+        int grid_mult = ADF_GRID_MULT;
         std::vector<int> band_pts;
         std::vector<int> extrml;
         T delta;
@@ -67,6 +68,14 @@ private:
 
     };
 
+    ParksMcClellanParam *pmc_param;
+
+    void setParksMcClellanParameters();
+    void RemezInterchange(ParksMcClellanParam*);
+    void ComputeLagrange(ParksMcClellanParam*);
+    T EstimateFreqResponse(ParksMcClellanParam*, T);
+    void ComputeCoeffs();
+
     T CalcFilterLen(const WindowType &w_type);
     void CalcIdealFIRCoeffs();
     void RectangularWindowCoeffs();
@@ -76,22 +85,21 @@ private:
     void KaiserWindowCoeffs(T beta);
     void BartlettWindowCoeffs();
     void ParksMcClellanWindowCoeffs();
+    void MultWinIdealCoeffs();
 public:
 
     DigFIRFilter(FilterType& f_type, FiltParam<T>& f_param, ApproxType& atype)
     {
+        pmc_param = new ParksMcClellanParam();
+    }
 
+    ~DigFIRFilter()
+    {
+        delete pmc_param;
     }
 
     void CalcDigFIRCoeffs(const WindowType& w_type, std::size_t order = 0);
 
-
-    void setParksMcClellanParameters();
-    void RemezInterchange();
-    void ComputeLagrange();
-    void EstimateFreqResponse();
-    void ComputeCoeffs();
-    void MultWinIdealCoeffs();
 };
 
 /*!
@@ -426,6 +434,359 @@ void DigFIRFilter<T>::ParksMcClellanWindowCoeffs()
 {
 
 }
+
+template<typename T>
+void DigFIRFilter<T>::setParksMcClellanParameters()
+{
+    std::vector<T> edge((2*ADF_MAX_BANDS), 0);
+    std::vector<T> resp(ADF_MAX_BANDS, 0);
+    std::vector<T> wate(ADF_MAX_BANDS, 0);
+
+    auto sb_err = std::pow(10, 0.05 * m_fparam.gain_stopband.first());
+    auto pb_err = 1 - std::pow(10, 0.05 * m_fparam.gain_passband.first());
+    auto W = pb_err / sb_err;
+
+    switch(m_ftype)
+    {
+    case FilterType::LPF :
+        pmc_param->num_bands = 2;
+        edge[0] = 0;
+        edge[1] = m_fparam.freq_passband.first() / (ADF_PI_2 * m_fparam.fsamp);
+        edge[2] = m_fparam.freq_stopband.first() / (ADF_PI_2 * m_fparam.fsamp);
+        edge[3] = 0.5;
+        resp[0] = 1.0;
+        resp[1] = 0.0;
+        wate[0] = 1.0;
+        wate[1] = W;
+        break;
+
+    case FilterType::HPF :
+        pmc_param->num_bands = 2;
+        edge[0] = 0;
+        edge[1] = m_fparam.freq_stopband.first() / (ADF_PI_2 * m_fparam.fsamp);
+        edge[2] = m_fparam.freq_passband.first() / (ADF_PI_2 * m_fparam.fsamp);
+        edge[3] = 0.5;
+        resp[0] = 0.0;
+        resp[1] = 1.0;
+        wate[0] = W;
+        wate[1] = 1.0;
+        break;
+
+    case FilterType::PBF :
+        pmc_param->num_bands = 3;
+        edge[0] = 0;
+        edge[1] = m_fparam.freq_stopband.first() / (ADF_PI_2 * m_fparam.fsamp);
+        edge[2] = m_fparam.freq_passband.first() / (ADF_PI_2 * m_fparam.fsamp);
+        edge[3] = m_fparam.freq_passband.second() / (ADF_PI_2 * m_fparam.fsamp);
+        edge[4] = m_fparam.freq_stopband.second() / (ADF_PI_2 * m_fparam.fsamp);
+        edge[5] = 0.5;
+        resp[0] = 0.0;
+        resp[1] = 1.0;
+        resp[3] = 0.0;
+        wate[0] = W;
+        wate[1] = 1.0;
+        wate[2] = W;
+        break;
+
+    case FilterType::SBF :
+        pmc_param->num_bands = 3;
+        edge[0] = 0;
+        edge[1] = m_fparam.freq_passband.first() / (ADF_PI_2 * m_fparam.fsamp);
+        edge[2] = m_fparam.freq_stopband.first() / (ADF_PI_2 * m_fparam.fsamp);
+        edge[3] = m_fparam.freq_stopband.second() / (ADF_PI_2 * m_fparam.fsamp);
+        edge[4] = m_fparam.freq_passband.second() / (ADF_PI_2 * m_fparam.fsamp);
+        edge[5] = 0.5;
+        resp[0] = 1.0;
+        resp[1] = 0.0;
+        resp[3] = 1.0;
+        wate[0] = 1.0;
+        wate[1] = W;
+        wate[2] = 1.0;
+        break;
+    }
+
+    auto filt_len = m_order;
+    auto num_cfs = (filt_len + 1) / 2;
+    pmc_param->filt_type = FIRType::SymOdd;
+    pmc_param->num_ext = num_cfs + 1;
+    pmc_param->num_pts = pmc_param->num_ext * pmc_param->grid_mult;
+
+    pmc_param->band_pts.reserve(ADF_MAX_BANDS);
+    pmc_param->band_pts.assign(pmc_param->band_pts.capacity(), 0);
+
+    pmc_param->grid.reserve(pmc_param->num_pts);
+    pmc_param->grid.assign(pmc_param->grid.capacity(), 0);
+
+    pmc_param->grid_resp.reserve(pmc_param->num_pts);
+    pmc_param->grid_resp.assign(pmc_param->grid_resp.capacity(), 0);
+
+    pmc_param->grid_wate.reserve(pmc_param->num_pts);
+    pmc_param->grid_wate.assign(pmc_param->grid_wate.capacity(), 0);
+
+    pmc_param->x.reserve(pmc_param->num_ext);
+    pmc_param->x.assign(pmc_param->x.capacity(), 0);
+
+    pmc_param->alpha.reserve(pmc_param->num_ext);
+    pmc_param->alpha.assign(pmc_param->alpha.capacity(), 0);
+
+    pmc_param->beta.reserve(pmc_param->num_ext);
+    pmc_param->beta.assign(pmc_param->beta.capacity(), 0);
+
+    pmc_param->C.reserve(pmc_param->num_ext);
+    pmc_param->C.assign(pmc_param->C.capacity(), 0);
+
+    pmc_param->extrml.reserve(2 * pmc_param->num_ext);
+    pmc_param->extrml.assign(pmc_param->extrml.capacity(), 0);
+
+    pmc_param->P.reserve(pmc_param->num_pts);
+    pmc_param->P.assign(pmc_param->P.capacity(), 0);
+
+    pmc_param->E.reserve(pmc_param->num_pts);
+    pmc_param->E.assign(pmc_param->E.capacity(), 0);
+
+    auto BW_total = 0;
+    std::vector<T> band_wid(pmc_param->num_bands, 0);
+    for(auto b=0; b<pmc_param->num_bands; ++b)
+    {
+        band_wid[b] = (edge[2*b + 1] - edge[2*b]);
+        BW_total += band_wid[b];
+    }
+
+    auto grid_dens = static_cast<T>(pmc_param->num_pts - pmc_param->num_bands) / BW_total;
+    auto extr_dens = static_cast<T>(pmc_param->num_ext - pmc_param->num_bands) / BW_total;
+    std::vector<T> band_ext(ADF_MAX_BANDS, 0);
+    band_ext[pmc_param->num_bands-1] = pmc_param->num_ext;
+    pmc_param->band_pts[pmc_param->num_bands-1] = pmc_param->num_pts;
+
+    for(auto b=0; b<pmc_param->num_bands-1; ++b)
+    {
+        pmc_param->band_pts[b] = static_cast<int>(grid_dens * band_wid[b] + 1.5);
+        pmc_param->band_pts[pmc_param->num_bands-1] -= pmc_param->band_pts[b];
+        band_ext[b] = static_cast<int>(extr_dens * band_wid[b] + 1.5);
+        band_ext[pmc_param->num_bands-1] -= band_ext[b];
+    }
+
+    auto j=0;
+    for(auto b=0; b<pmc_param->num_bands; ++b)
+    {
+        auto freq_spc = band_wid[b] / static_cast<T>(pmc_param->band_pts[b] - 1);
+        pmc_param->grid[j] = edge[2 * b];
+        pmc_param->grid_resp[j] = resp[b];
+        pmc_param->grid_wate[j++] = wate[b];
+
+        for(auto i=1; i<pmc_param->band_pts[b]; ++i)
+        {
+            pmc_param->grid[j] = pmc_param->grid[j-1] + freq_spc;
+            pmc_param->grid_resp[j] = resp[b];
+            pmc_param->grid_wate[j++] = wate[b];
+        }
+    }
+
+    auto e = 0;
+    auto index = 0;
+    for(auto b=0; b<pmc_param->num_bands; ++b)
+    {
+        auto pt_dens = static_cast<T>(pmc_param->band_pts[b]) / static_cast<T>(band_ext[b]);
+        pmc_param->extrml[e++] = index;
+
+        for(auto i=0; i<band_ext[b]; ++i)
+        {
+            pmc_param->extrml[e++] = static_cast<int>(static_cast<T>(i) * pt_dens + 0.5) + index;
+        }
+        index += pmc_param->band_pts[b];
+    }
+}
+
+/*!
+ * \brief
+ */
+template<typename T>
+void DigFIRFilter<T>::RemezInterchange(DigFIRFilter<T>::ParksMcClellanParam *param)
+{
+    //! Compute alpha[], beta[], C[], x[] and delta
+    ComputeLagrange(param);
+
+    for(auto j=0; j<param->num_pts; ++j)
+    {
+        param->P[j] = EstimateFreqResponse(param, ADF_PI_2 * param->grid[j]);
+        param->E[j] = std::fabs((param->grid_resp[j] - param->P[j]) * param->grid_wate[j]);
+    }
+
+    T p, err_old, err_now;
+    auto ext = 0;
+    auto bnd_str = 0;
+    for(auto b=0; b<param->num_pts; ++b)
+    {
+        p = EstimateFreqResponse(param, ADF_PI_2 * param->grid[bnd_str]);
+        err_old = std::fabs((p - param->grid_resp[bnd_str]) * param->grid_wate[bnd_str]);
+
+        p = EstimateFreqResponse(param, ADF_PI_2 * param->grid[bnd_str+1]);
+        err_now = std::fabs((p - param->grid_resp[bnd_str+1]) * param->grid_wate[bnd_str+1]);
+
+        auto slope = 1;
+        if((b > 0) || (err_now < err_old))
+        {
+            param->extrml[ext++] = bnd_str;
+            slope = -1;
+        }
+
+        err_old = err_now;
+        auto j = 0;
+        for(auto i=2; i<param->band_pts[b]-1; ++i)
+        {
+            j = i + bnd_str;
+            p = EstimateFreqResponse(param, ADF_PI_2 * param->grid[j]);
+            err_now = std::fabs((p - param->grid_resp[j]) * param->grid_wate[j]);
+
+            if(err_now > err_old)
+            {
+                slope = -1;
+            }
+            else if(err_now < err_old)
+            {
+                if(slope == 1)
+                {
+                    param->extrml[ext++] = j - 1;
+                    slope = -1;
+                }
+            }
+            else
+            {   }
+
+            err_old = err_now;
+        }
+
+        p = EstimateFreqResponse(param, ADF_PI_2 * param->grid[j+1]);
+        err_now = std::fabs((p - param->grid_resp[j+1]) * param->grid_wate[j+1]);
+
+        if((b < param->num_bands-1) || (err_now > err_old))
+        {
+            param->extrml[ext++] = j+1;
+        }
+        bnd_str += param->band_pts[b];
+    }
+
+    auto excess = ext - param->num_ext;
+    if(excess > 0)
+    {
+        for(auto i=0; i< excess; ++i)
+        {
+            auto index = 0;
+            err_now = param->E[param->extrml[0]];
+
+            for(auto j=1; j<ext; ++j)
+            {
+                if(param->E[param->extrml[j]] < err_now)
+                {
+                    index = j;
+                    err_now = param->E[param->extrml[j]];
+                }
+            }
+            --ext;
+
+            for(auto j=index; j<ext; ++j)
+            {
+                param->extrml[j] = param->extrml[j+1];
+            }
+        }
+    }
+}
+
+/*!
+ * \brief ComputeLagrange - use Lagrange interpolation formula
+ *                          \f$( A_{e}(e^{j\omega}) = P(\cos \omega) = \frac{\sum_{k=1}^{L+1}[d_{k}/(x - x_{k})]C_{k}}{\sum_{k=1}^{L+1}[d_{k}/(x - x_{k})]}
+ *                          )\f$
+ * \param param - struct of common values
+ */
+template<typename T>
+void DigFIRFilter<T>::ComputeLagrange(DigFIRFilter<T>::ParksMcClellanParam *param)
+{
+    //! x_{i} = \cos(\omega_{i}), \omega_{i} are points of alternations
+    for(auto k=0; k<param->num_ext; ++k)
+    {
+        param->x[k] = std::cos(param->grid[param->extrml[k]] * ADF_PI_2);
+    }
+
+    //! compute alpha[k] and beta[k] see b_{k}, d_{k} values in Oppenheim A.V.-Discrete-Time Signal Processing.-2013 pp.591
+    for(auto k=0; k<param->num_ext; ++k)
+    {
+        auto prod = 1.0;
+        auto xk = param->x[k];
+        for(auto i=0; i<param->num_ext; ++i)
+        {
+            if(xk != param->x[i]){
+                prod *= (xk - param->x[i]);
+            }
+        }
+        if(prod == 0.0){
+            param->alpha[k] = ADF_INF;
+        }
+        else{
+            param->alpha[k] = 1.0/prod;
+        }
+
+        param->beta[k] = param->alpha[k] * (xk - param->x[param->num_ext-1]);
+    }
+
+    //! compute \delta see Oppenheim A.V.-Discrete-Time Signal Processing.-2013 pp.591 eq.114
+    int index;
+    auto numer = 0.0;
+    auto denom = 0.0;
+    auto sign = 1.0;
+    for(auto k=0; k<param->num_ext; ++k)
+    {
+        index = param->extrml[k];
+        numer += param->alpha[k] * param->grid_resp[index];
+        denom += sign * param->alpha[k] / param->grid_wate[index];
+        sign = -sign;
+    }
+
+    if(denom == 0.0){
+        param->delta = ADF_INF;
+    }
+    else{
+        param->delta = numer / denom;
+    }
+    sign = 1.0;
+
+    //! compute C[k} in Oppenheim A.V.-Discrete-Time Signal Processing.-2013 pp.591 eq.116b
+    for(auto k=0; k<param->num_ext; ++k)
+    {
+        index = param->extrml[k];
+        param->C[k] = param->grid_resp[index] - sign * param->delta /
+                                               param->grid_wate[index];
+        sign = -sign;
+    }
+}
+
+template<typename T>
+T DigFIRFilter<T>::EstimateFreqResponse(DigFIRFilter::ParksMcClellanParam *param, T rad_freq)
+{
+    T denom_sum, numer_sum;
+    auto xf = std::cos(rad_freq);
+    for(auto k=0; k<param->num_ext; ++k)
+    {
+        if(std::fabs(xf - param->x[k] > ERR_SMALL))
+        {
+            auto tmp = param->beta[k] / (xf - param->x[k]);
+            denom_sum += tmp;
+            numer_sum += tmp * param->C[k];
+        }
+        else{
+            return param->C[k];
+        }
+    }
+
+    if(denom_sum == 0.0)
+    {
+        return static_cast<T>(ADF_INF);
+    }
+    else{
+        return static_cast<T>(numer_sum/denom_sum);
+    }
+}
+
+
 
 } //namespace adf
 
