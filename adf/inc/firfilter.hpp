@@ -12,6 +12,7 @@
 constexpr int ADF_GRID_MULT(16);         /**< starting grid mult */
 constexpr int ADF_MAX_BANDS(10);         /**< max bands for PM */
 constexpr double ADF_INF(1E+300);
+constexpr double ADF_ERR_EPS(1E-6);
 
 namespace adf {
 
@@ -74,7 +75,7 @@ private:
     void RemezInterchange(ParksMcClellanParam*);
     void ComputeLagrange(ParksMcClellanParam*);
     T EstimateFreqResponse(ParksMcClellanParam*, T);
-    void ComputeCoeffs();
+    void ComputeCoeffs(ParksMcClellanParam*);
 
     T CalcFilterLen(const WindowType &w_type);
     void CalcIdealFIRCoeffs();
@@ -432,7 +433,61 @@ void DigFIRFilter<T>::KaiserWindowCoeffs(T beta)
 template<typename T>
 void DigFIRFilter<T>::ParksMcClellanWindowCoeffs()
 {
+    pmc_param->grid_mult = ADF_GRID_MULT * 2;
 
+    T min_err, max_err;
+    for(auto k=0; k<4; ++k)
+    {
+        pmc_param->grid_mult *= 2;
+        setParksMcClellanParameters();
+
+        //! Start the Remez algorithm inner loop
+        auto q_old = 1.0;
+        bool done = false;
+        for(auto i=0; i<30; ++i)
+        {
+            RemezInterchange(pmc_param);
+            max_err = pmc_param->E[pmc_param->extrml[0]];
+            min_err = max_err;
+            for(auto j=1; j<pmc_param->num_ext; ++j)
+            {
+                auto test = pmc_param->E[pmc_param->extrml[j]];
+                if(test > max_err)
+                {
+                    max_err = test;
+                }
+                if(test < min_err)
+                {
+                    min_err = test;
+                }
+            }
+            auto q_now = static_cast<T>((max_err - min_err)) / max_err;
+            if(q_now < ADF_ERR_EPS)
+            {
+                done = true;
+                break;
+            }
+
+            //! If no significant progress after 15 iterations, try again with increase of grid density
+            if((i > 15) && (q_now > q_old)){ break; }
+            q_old = q_now;
+        }
+
+        if(done)
+        {
+            ComputeCoeffs(pmc_param);
+            break;
+        }
+    }
+}
+
+template<typename T>
+void DigFIRFilter<T>::MultWinIdealCoeffs()
+{
+    for(auto i=0; i<m_order; ++i)
+    {
+        n_acoefs[i] *= n_bcoefs[i];
+    }
 }
 
 template<typename T>
@@ -786,8 +841,44 @@ T DigFIRFilter<T>::EstimateFreqResponse(DigFIRFilter::ParksMcClellanParam *param
     }
 }
 
+template<typename T>
+void DigFIRFilter<T>::ComputeCoeffs(DigFIRFilter::ParksMcClellanParam *param)
+{
+    auto order = m_order;
+    auto num_cfs = (order + 1) / 2;
+    auto omega = ADF_PI_2 / static_cast<T>(order);
+    for(auto k=0; k<num_cfs; ++k)
+    {
+        param->P[k] = EstimateFreqResponse(param, k*omega);
+    }
 
+    switch(param->filt_type)
+    {
+    case FIRType::SymOdd :
+        for(auto n=0; n<num_cfs; ++n)
+        {
+            auto m = num_cfs-1-n;
+            n_acoefs[m] = param->P[0];
+            auto mult = ADF_PI_2 * n / static_cast<T>(order);
+
+            for(auto k=1; k<num_cfs; ++k)
+            {
+                n_acoefs[m] += 2 * param->P[k] * std::cos(k * mult);
+            }
+            n_acoefs[m] /= static_cast<T>(order);
+            n_acoefs[order-1-m] = n_acoefs[m];
+        }
+        break;
+    case FIRType::SymEven :
+        break;
+    case FIRType::AsymOdd :
+        break;
+    case FIRType::AsymEven :
+        break;
+    default:
+        ADF_ERROR("Error in DigFIRFilter<T>::ComputeCoeffs(DigFIRFilter::ParksMcClellanParam *) Unknown FIR filter type");
+    }
+}
 
 } //namespace adf
-
 #endif //DIGFIRFILTER_H
