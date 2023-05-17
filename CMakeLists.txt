@@ -15,15 +15,30 @@ else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
 endif()
 
+# Targets
+##################################################
+add_subdirectory(adf)
+
 # Options
 ##################################################
 option(BUILD_TESTS "Build tests." ON)
 
-# Targets
-##################################################
-include(GNUInstallDirs)
+if(BUILD_TESTS)
+    enable_testing()
+    configure_file(CMakeLists.txt.in
+        googletest-download/CMakeLists.txt)
+    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download)
+    execute_process(COMMAND ${CMAKE_COMMAND} --build .
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download)
 
-add_subdirectory(adf)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+    add_subdirectory(${CMAKE_BINARY_DIR}/googletest-src
+        ${CMAKE_BINARY_DIR}googletest-build)
+
+    add_subdirectory(test)
+endif()
 
 # Installation TODO corrected
 ##################################################

@@ -23,7 +23,3 @@ target_include_directories(${BIN} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(${BIN} PUBLIC ${PROJECT_INCLUDE_DIRS})
 target_compile_features(${BIN} PUBLIC ${PROJECT_COMPILE_DEFINITIONS})
 set_target_properties(${BIN} PROPERTIES LINKER_LANGUAGE CXX)
-
-# Add test
-##################################################
-add_subdirectory(test)
